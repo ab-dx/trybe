@@ -9,10 +9,14 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../lib/auth/AuthContext";
+import { useFonts, Montserrat_400Regular } from "@expo-google-fonts/montserrat";
 
 export const TopBar: React.FC = () => {
 	const { user, logout } = useAuth();
 	const [showDropdown, setShowDropdown] = useState(false);
+	const [loaded] = useFonts({
+		Montserrat_400Regular,
+	});
 
 	const getInitial = (email: string | null | undefined): string => {
 		if (!email) return "?";
@@ -43,7 +47,7 @@ export const TopBar: React.FC = () => {
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.title}>Trybe</Text>
+			<Text style={styles.title}>TRYBE</Text>
 
 			<View style={styles.profileContainer}>
 				<TouchableOpacity
@@ -93,9 +97,10 @@ const styles = StyleSheet.create({
 		zIndex: 1000,
 	},
 	title: {
-		fontSize: 20,
+		fontSize: 24,
 		fontWeight: "bold",
 		color: "#fff",
+		fontFamily: "Montserrat_400Regular",
 	},
 	profileContainer: {
 		position: "relative",
