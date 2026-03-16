@@ -1,34 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { AuthProvider, useAuth } from 'lib/auth/AuthContext';
 import { LoginScreen } from 'components/LoginScreen';
+import { SignupScreen } from 'components/SignupScreen';
 import { StatusBar } from 'components/StatusBar';
+import { TopBar } from 'components/TopBar';
 import { FeedScreen } from 'screens/FeedScreen';
 import { MapScreen } from 'screens/MapScreen';
 import { ActivityScreen } from 'screens/ActivityScreen';
 
 type TabName = 'Feed' | 'Map' | 'Activity';
+type AuthScreen = 'login' | 'signup';
 
-export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+const MainApp: React.FC = () => {
+  const { user, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabName>('Feed');
-
-  useEffect(() => {
-    const checkLoginStatus = async () => {
-      const loggedIn = await AsyncStorage.getItem('isLoggedIn');
-      setIsLoggedIn(loggedIn === 'true');
-      setIsLoading(false);
-    };
-    checkLoginStatus();
-  }, []);
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-  };
+  const [authScreen, setAuthScreen] = useState<AuthScreen>('login');
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -48,17 +38,30 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container} edges={['top']}>
-        {!isLoggedIn ? (
-          <LoginScreen onLogin={handleLogin} />
+        {!user ? (
+          authScreen === 'login' ? (
+            <LoginScreen onNavigateToSignup={() => setAuthScreen('signup')} />
+          ) : (
+            <SignupScreen onNavigateToLogin={() => setAuthScreen('login')} />
+          )
         ) : (
           <View style={styles.mainContent}>
+            <TopBar />
             <View style={styles.screenContainer}>{renderScreen()}</View>
             <StatusBar activeTab={activeTab} onTabPress={setActiveTab} />
           </View>
         )}
-        <ExpoStatusBar style={isLoggedIn ? 'light' : 'auto'} />
+        <ExpoStatusBar style={user ? 'light' : 'auto'} />
       </SafeAreaView>
     </SafeAreaProvider>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }
 

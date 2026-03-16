@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../lib/auth/AuthContext';
 
-interface LoginScreenProps {
-  onNavigateToSignup: () => void;
+interface SignupScreenProps {
+  onNavigateToLogin: () => void;
 }
 
 const validateEmail = (email: string): string | null => {
@@ -21,28 +21,41 @@ const validatePassword = (password: string): string | null => {
   if (!password) {
     return 'Password is required';
   }
+  if (password.length < 6) {
+    return 'Password must be at least 6 characters';
+  }
   return null;
 };
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignup }) => {
-  const { login, error, clearError, resetPassword } = useAuth();
+const validateConfirmPassword = (password: string, confirmPassword: string): string | null => {
+  if (!confirmPassword) {
+    return 'Please confirm your password';
+  }
+  if (password !== confirmPassword) {
+    return 'Passwords do not match';
+  }
+  return null;
+};
+
+export const SignupScreen: React.FC<SignupScreenProps> = ({ onNavigateToLogin }) => {
+  const { signup, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetSent, setResetSent] = useState(false);
 
-  const handleLogin = async () => {
+  const handleSignup = async () => {
     clearError();
 
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
+    const confirmError = validateConfirmPassword(password, confirmPassword);
 
     const newErrors: Record<string, string> = {};
     if (emailError) newErrors.email = emailError;
     if (passwordError) newErrors.password = passwordError;
+    if (confirmError) newErrors.confirmPassword = confirmError;
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -53,90 +66,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignup }) 
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await signup(email, password);
     } catch {
       // Error is handled by AuthContext
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleForgotPassword = async () => {
-    const emailError = validateEmail(resetEmail);
-    if (emailError) {
-      Alert.alert('Error', emailError);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await resetPassword(resetEmail);
-      setResetSent(true);
-    } catch {
-      // Error is handled by AuthContext
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (showForgotPassword) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.subtitle}>
-          {resetSent
-            ? 'Check your email for reset instructions'
-            : 'Enter your email to receive reset instructions'}
-        </Text>
-
-        {!resetSent ? (
-          <>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
-                placeholder="Email"
-                placeholderTextColor="#9ca3af"
-                value={resetEmail}
-                onChangeText={setResetEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-              />
-            </View>
-
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleForgotPassword}
-              disabled={isLoading}>
-              <Text style={styles.buttonText}>{isLoading ? 'Sending...' : 'Send Reset Link'}</Text>
-            </TouchableOpacity>
-          </>
-        ) : null}
-
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => {
-            setShowForgotPassword(false);
-            setResetSent(false);
-            setResetEmail('');
-            clearError();
-          }}>
-          <Text style={styles.linkText}>Back to Login</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome</Text>
-      <Text style={styles.subtitle}>Sign in to continue</Text>
-
-      {error && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorMessage}>{error.message}</Text>
-        </View>
-      )}
+      <Text style={styles.title}>Create Account</Text>
+      <Text style={styles.subtitle}>Sign up to get started</Text>
 
       <View style={styles.inputContainer}>
         <TextInput
@@ -147,7 +88,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignup }) 
           onChangeText={(text) => {
             setEmail(text);
             if (errors.email) setErrors((prev) => ({ ...prev, email: '' }));
-            clearError();
           }}
           autoCapitalize="none"
           keyboardType="email-address"
@@ -165,28 +105,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToSignup }) 
           onChangeText={(text) => {
             setPassword(text);
             if (errors.password) setErrors((prev) => ({ ...prev, password: '' }));
-            clearError();
           }}
           secureTextEntry
         />
         {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
       </View>
 
-      <TouchableOpacity style={styles.forgotPassword} onPress={() => setShowForgotPassword(true)}>
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-      </TouchableOpacity>
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={[styles.input, errors.confirmPassword && styles.inputError]}
+          placeholder="Confirm Password"
+          placeholderTextColor="#9ca3af"
+          value={confirmPassword}
+          onChangeText={(text) => {
+            setConfirmPassword(text);
+            if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: '' }));
+          }}
+          secureTextEntry
+        />
+        {errors.confirmPassword ? (
+          <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+        ) : null}
+      </View>
 
       <TouchableOpacity
         style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={handleLogin}
+        onPress={handleSignup}
         disabled={isLoading}>
-        <Text style={styles.buttonText}>{isLoading ? 'Signing In...' : 'Login'}</Text>
+        <Text style={styles.buttonText}>{isLoading ? 'Creating Account...' : 'Sign Up'}</Text>
       </TouchableOpacity>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Don&apos;t have an account? </Text>
-        <TouchableOpacity onPress={onNavigateToSignup}>
-          <Text style={styles.linkText}>Sign Up</Text>
+        <Text style={styles.footerText}>Already have an account? </Text>
+        <TouchableOpacity onPress={onNavigateToLogin}>
+          <Text style={styles.linkText}>Sign In</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -210,22 +162,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#9ca3af',
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  errorContainer: {
-    backgroundColor: '#fef2f2',
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    borderRadius: 8,
-    padding: 12,
-    width: '100%',
-    marginBottom: 16,
-  },
-  errorMessage: {
-    color: '#ef4444',
-    fontSize: 14,
-    textAlign: 'center',
+    marginBottom: 48,
   },
   inputContainer: {
     width: '100%',
@@ -249,20 +186,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: 16,
-  },
-  forgotPasswordText: {
-    color: '#007aff',
-    fontSize: 14,
-  },
   button: {
     backgroundColor: '#007aff',
     borderRadius: 8,
     padding: 16,
     width: '100%',
     alignItems: 'center',
+    marginTop: 16,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -271,9 +201,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
-  },
-  backButton: {
-    marginTop: 24,
   },
   footer: {
     flexDirection: 'row',
