@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../firebase';
 import { authService, AuthError } from './authService';
 
@@ -31,16 +31,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      if (firebaseUser) {
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-        };
-        await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
-      } else {
-        await AsyncStorage.removeItem(USER_STORAGE_KEY);
-      }
+//       if (firebaseUser) {
+//         const userData = {
+//           uid: firebaseUser.uid,
+//           email: firebaseUser.email,
+//           displayName: firebaseUser.displayName,
+//         };
+//         await AsyncStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+//       } else {
+//         await AsyncStorage.removeItem(USER_STORAGE_KEY);
+//       }
       setIsLoading(false);
     });
 
