@@ -3,7 +3,6 @@ import { View, StyleSheet } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
-import { GravitasOne_400Regular } from "@expo-google-fonts/gravitas-one";
 
 import { AuthProvider, useAuth } from "lib/auth/AuthContext";
 import { LoginScreen } from "components/LoginScreen";
@@ -60,14 +59,6 @@ const MainApp: React.FC = () => {
 };
 
 export default function App() {
-	const [fontsLoaded] = useFonts({
-		GravitasOne_400Regular,
-	});
-
-	if (!fontsLoaded) {
-		return null;
-	}
-
 	return (
 		<AuthProvider>
 			<MainApp />
