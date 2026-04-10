@@ -11,12 +11,12 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Location from "expo-location";
+import MapView, { Marker, UrlTile } from "react-native-maps";
 
-// 1. Import your custom auth hook (adjust the path to match your folder structure)
+// 1. Import your custom auth hook
 import { useAuth } from "../lib/auth/AuthContext";
 
 export default function CreateActivity({ navigation }) {
-	// 2. Destructure the user from your context
 	const { user } = useAuth();
 
 	const [title, setTitle] = useState("");
@@ -36,11 +36,12 @@ export default function CreateActivity({ navigation }) {
 			if (status !== "granted") {
 				Alert.alert(
 					"Permission Denied",
-					"Trybe needs your location to host an activity.",
+					"Trybe needs your location to set a starting point for your activity.",
 				);
 				return;
 			}
 			let loc = await Location.getCurrentPositionAsync({});
+			// Sets the initial pin drop to where the user currently is
 			setLocation({ lat: loc.coords.latitude, lng: loc.coords.longitude });
 		})();
 	}, []);
@@ -56,7 +57,6 @@ export default function CreateActivity({ navigation }) {
 		if (!location)
 			return Alert.alert("Locating...", "Still fetching your GPS coordinates.");
 
-		// 3. Safety check: ensure the user is actually authenticated
 		if (!user)
 			return Alert.alert(
 				"Auth Error",
@@ -66,23 +66,19 @@ export default function CreateActivity({ navigation }) {
 		setIsSubmitting(true);
 
 		try {
-			// 4. Extract the fresh JWT from the Firebase User object
-			// This guarantees the token is valid and unexpired for your NestJS AuthGuard
 			const token = await user.getIdToken();
 
 			const payload = {
 				title,
 				description,
 				latitude: location.lat,
-				longitude: location.lng,
+				longitude: location.lng, // Now reflects wherever the user dragged the pin
 				startTime: startTime.toISOString(),
 				visibility,
 			};
 
-			// 5. Fire the request with the Bearer token
-			// Make sure to replace 'YOUR_LOCAL_OR_PROD_URL' with your actual NestJS endpoint
 			const response = await fetch(
-				`http://${process.env.EXPO_PUBLIC_API_URL}:3000/activities`,
+				`http://${process.env.EXPO_PUBLIC_API_URL}/activities`,
 				{
 					method: "POST",
 					headers: {
@@ -94,7 +90,6 @@ export default function CreateActivity({ navigation }) {
 			);
 
 			if (!response.ok) {
-				// Log the actual backend error for easier debugging
 				const errorData = await response.json().catch(() => ({}));
 				console.error("Backend Error:", errorData);
 				throw new Error("Failed to create activity on backend");
@@ -104,10 +99,7 @@ export default function CreateActivity({ navigation }) {
 			// navigation.goBack();
 		} catch (error) {
 			console.error("Creation flow error:", error);
-			Alert.alert(
-				"Error",
-				"Could not create activity. Check your connection and try again.",
-			);
+			Alert.alert("Error", "Could not create activity. Check your connection.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -139,6 +131,58 @@ export default function CreateActivity({ navigation }) {
 					value={description}
 					onChangeText={setDescription}
 				/>
+			</View>
+
+			{/* NEW: Interactive Location Picker */}
+			<View style={styles.inputGroup}>
+				<Text style={styles.label}>Exact Location</Text>
+				{location ? (
+					<View style={styles.mapContainer}>
+						<MapView
+							style={styles.map}
+							initialRegion={{
+								latitude: location.lat,
+								longitude: location.lng,
+								latitudeDelta: 0.02,
+								longitudeDelta: 0.02,
+							}}
+							// We disable scrolling on the map itself so it doesn't fight
+							// with the main ScrollView. The user must drag the pin instead.
+							scrollEnabled={true}
+							pitchEnabled={true}
+							zoomEnabled={true}
+						>
+							<UrlTile
+								urlTemplate="https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+								maximumZ={19}
+								flipY={false}
+								zIndex={1}
+							/>
+							<Marker
+								draggable // Makes the pin movable
+								coordinate={{ latitude: location.lat, longitude: location.lng }}
+								onDragEnd={(e) =>
+									setLocation({
+										lat: e.nativeEvent.coordinate.latitude,
+										lng: e.nativeEvent.coordinate.longitude,
+									})
+								}
+								pinColor="#3B82F6"
+								zIndex={2}
+							/>
+						</MapView>
+						<View style={styles.mapHintContainer}>
+							<Text style={styles.mapHint}>
+								Hold and drag the pin to adjust
+							</Text>
+						</View>
+					</View>
+				) : (
+					<View style={[styles.mapContainer, styles.mapPlaceholder]}>
+						<ActivityIndicator color="#3B82F6" />
+						<Text style={styles.mapHintPlaceholder}>Locating you...</Text>
+					</View>
+				)}
 			</View>
 
 			<View style={styles.inputGroup}>
@@ -200,9 +244,7 @@ export default function CreateActivity({ navigation }) {
 				{isSubmitting ? (
 					<ActivityIndicator color="#FFFFFF" />
 				) : (
-					<Text style={styles.submitButtonText}>
-						{location ? "Create Activity" : "Getting Location..."}
-					</Text>
+					<Text style={styles.submitButtonText}>Create Activity</Text>
 				)}
 			</TouchableOpacity>
 		</ScrollView>
@@ -236,6 +278,28 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	textArea: { height: 100, textAlignVertical: "top" },
+
+	// Map Styles
+	mapContainer: {
+		height: 200,
+		borderRadius: 12,
+		overflow: "hidden",
+		backgroundColor: "#1E293B",
+		marginTop: 4,
+	},
+	map: { flex: 1 },
+	mapHintContainer: {
+		position: "absolute",
+		bottom: 12,
+		alignSelf: "center",
+		backgroundColor: "rgba(15, 23, 42, 0.8)",
+		paddingHorizontal: 16,
+		paddingVertical: 6,
+		borderRadius: 20,
+	},
+	mapHint: { color: "#E2E8F0", fontSize: 12, fontWeight: "600" },
+	mapPlaceholder: { justifyContent: "center", alignItems: "center", gap: 12 },
+	mapHintPlaceholder: { color: "#94A3B8", fontSize: 14 },
 
 	toggleContainer: { flexDirection: "row", gap: 8 },
 	toggleButton: {
