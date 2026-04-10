@@ -3,7 +3,6 @@ import { View, Text, FlatList, ActivityIndicator, RefreshControl, StyleSheet } f
 import { ActivityCard, ActivityProps } from '../components/ActivityCard';
 import { useAuth } from '../lib/auth/AuthContext';
 
-// 🛑 CRITICAL: Ensure this is your computer's actual Wi-Fi IPv4 address
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
 
 export const FeedScreen: React.FC = () => {
@@ -15,9 +14,7 @@ export const FeedScreen: React.FC = () => {
 
   const fetchFeed = async () => {
     try {
-      // THE HACK: We pass a spatial bounding box around Lat 25.54 / Lng 84.85.
-      // This forces the backend to use findInBounds() instead of findUpcoming().
-      // findInBounds() doesn't care if the event is in the past!
+
       const queryParams = '?minLat=25.0&maxLat=26.0&minLng=84.0&maxLng=85.0';
 
       const response = await fetch(`${API_URL}/activities${queryParams}`, {
