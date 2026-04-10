@@ -71,7 +71,7 @@ export class ActivitiesService {
   ): Promise<Activity[]> {
     return this.activitiesRepository
       .createQueryBuilder('activity')
-      .where('ST_Contains(ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat), activity.location::geometry)')
+      .where('ST_Contains(ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326), activity.location::geometry)')
       .setParameters({ minLat, maxLat, minLng, maxLng })
       .andWhere('activity.status != :status', { status: ActivityStatus.CANCELLED })
       .andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC })
