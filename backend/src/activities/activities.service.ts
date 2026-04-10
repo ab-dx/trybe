@@ -41,7 +41,10 @@ export class ActivitiesService {
       hostId,
       title: dto.title,
       description: dto.description,
-      location: `POINT(${dto.longitude} ${dto.latitude})`,
+      location: {
+        type: 'Point',
+        coordinates: [dto.longitude, dto.latitude], 
+      },
       startTime: dto.startTime,
       endTime: dto.endTime,
       visibility: dto.visibility || Visibility.PUBLIC,
@@ -108,8 +111,24 @@ export class ActivitiesService {
       throw new UnauthorizedException('Not the host of this activity');
     }
 
-    Object.assign(activity, dto);
+    // Safely apply standard fields
+    if (dto.title) activity.title = dto.title;
+    if (dto.description) activity.description = dto.description;
+    if (dto.startTime) activity.startTime = dto.startTime;
+    if (dto.endTime) activity.endTime = dto.endTime;
+    if (dto.visibility) activity.visibility = dto.visibility;
+    if (dto.status) activity.status = dto.status;
+
+    // Handle coordinate updates by reconstructing the GeoJSON Point
+    if (dto.latitude !== undefined && dto.longitude !== undefined) {
+      activity.location = {
+        type: 'Point',
+        coordinates: [dto.longitude, dto.latitude],
+      };
+    }
+
     return this.activitiesRepository.save(activity);
+
   }
 
   async delete(id: string, userId: string): Promise<void> {
