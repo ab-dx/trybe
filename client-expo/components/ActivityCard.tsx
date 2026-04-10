@@ -15,7 +15,6 @@ export interface ActivityProps {
 }
 
 export const ActivityCard: React.FC<{ activity: ActivityProps }> = ({ activity }) => {
-  // Format the date/time from the PostgreSQL timestamp
   const dateObj = new Date(activity.startTime);
   const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const formattedDate = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
