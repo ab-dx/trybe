@@ -12,8 +12,9 @@ import { TopBar } from "components/TopBar";
 import { FeedScreen } from "screens/FeedScreen";
 import { MapScreen } from "screens/MapScreen";
 import { ActivityScreen } from "screens/ActivityScreen";
+import { ProfileScreen } from "screens/ProfileScreen";
 
-type TabName = "Feed" | "Map" | "Activity";
+type TabName = "Feed" | "Map" | "Activity" | "Profile";
 type AuthScreen = "login" | "signup";
 
 const MainApp: React.FC = () => {
@@ -29,6 +30,8 @@ const MainApp: React.FC = () => {
 				return <MapScreen />;
 			case "Activity":
 				return <ActivityScreen />;
+			case "Profile":
+				return <ProfileScreen />;
 		}
 	};
 

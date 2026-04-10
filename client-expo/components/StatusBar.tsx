@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 
-type TabName = "Feed" | "Map" | "Activity";
+type TabName = "Feed" | "Map" | "Activity" | "Profile";
 
 interface StatusBarProps {
 	activeTab: TabName;
@@ -12,11 +12,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
 	activeTab,
 	onTabPress,
 }) => {
-	const tabs: TabName[] = ["Feed", "Map", "Activity"];
+	const tabs: TabName[] = ["Feed", "Map", "Activity", "Profile"];
 	const getIcon = (tab: TabName) => {
 		if (tab == "Feed") return "align-center";
 		else if (tab == "Map") return "map-pin";
 		else if (tab == "Activity") return "aperture";
+		else if (tab == "Profile") return "user";
 	};
 
 	return (
