@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import * as Location from 'expo-location';
 
 export interface ActivityProps {
   id: string;
@@ -7,6 +8,11 @@ export interface ActivityProps {
   description?: string;
   startTime: string;
   status: string;
+  // Added the location object based on your database JSON
+  location: {
+    type: string;
+    coordinates: [number, number]; // [longitude, latitude]
+  };
   host: {
     id: string;
     username?: string;
@@ -14,8 +20,56 @@ export interface ActivityProps {
   };
 }
 
-export const ActivityCard: React.FC<{ activity: ActivityProps }> = ({ activity }) => {
-  // Format the date/time from the PostgreSQL timestamp
+export interface ActivityCardProps {
+  activity: ActivityProps;
+  onPressLocation: () => void; // New prop
+}
+
+export const ActivityCard: React.FC<ActivityCardProps> = ({ activity, onPressLocation }) => {
+  const [address, setAddress] = useState<string>('Locating...');
+
+  // Reverse Geocoding Effect
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAddress = async () => {
+      try {
+        // GeoJSON uses [longitude, latitude], but Expo needs {latitude, longitude}
+        const [longitude, latitude] = activity.location.coordinates;
+
+        const geocodeResult = await Location.reverseGeocodeAsync({
+          latitude,
+          longitude,
+        });
+
+        if (isMounted && geocodeResult.length > 0) {
+          const place = geocodeResult[0];
+          // Try to get the most specific landmark name, fallback to street, then city
+          const specificName = place.name || place.street;
+          const region = place.city || place.subregion || place.region;
+
+          if (specificName && region && specificName !== region) {
+            setAddress(`${specificName}, ${region}`);
+          } else {
+            setAddress(specificName || region || 'Unknown Location');
+          }
+        } else if (isMounted) {
+          setAddress('Location unavailable');
+        }
+      } catch (error) {
+        console.warn('Geocoding failed for card:', error);
+        if (isMounted) setAddress('Coordinates only');
+      }
+    };
+
+    fetchAddress();
+
+    return () => {
+      isMounted = false; // Cleanup to prevent state updates if unmounted
+    };
+  }, [activity.location]);
+
+  // Format the date/time
   const dateObj = new Date(activity.startTime);
   const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const formattedDate = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -44,6 +98,19 @@ export const ActivityCard: React.FC<{ activity: ActivityProps }> = ({ activity }
 
       {/* Body: Title & Details */}
       <Text style={styles.title}>{activity.title}</Text>
+
+      {/* 📍 NEW: Location Landmark Display */}
+      <TouchableOpacity
+      style={styles.locationContainer}
+      onPress={onPressLocation}
+      activeOpacity={0.6}
+    >
+      <Text style={styles.locationIcon}>📍</Text>
+      <Text style={styles.locationText} numberOfLines={1}>
+        {address}
+      </Text>
+    </TouchableOpacity>
+
       {activity.description ? (
         <Text style={styles.description} numberOfLines={2}>
           {activity.description}
@@ -132,7 +199,22 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 6,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationIcon: {
+    marginRight: 6,
+    fontSize: 14,
+  },
+  locationText: {
+    color: '#38bdf8', // Light blue to make the location pop
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
   },
   description: {
     color: '#94a3b8',
@@ -152,7 +234,7 @@ const styles = StyleSheet.create({
   timeInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Allows time text to take up available space
+    flex: 1,
   },
   timeIcon: {
     marginRight: 8,
@@ -168,21 +250,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hypeButton: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Subtle indigo tint
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.4)', // Outlined look
+    borderColor: 'rgba(99, 102, 241, 0.4)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
   },
   hypeButtonText: {
-    color: '#818cf8', // Lighter indigo for text
+    color: '#818cf8',
     fontWeight: 'bold',
     fontSize: 13,
   },
   joinButton: {
-    backgroundColor: '#4f46e5', // Solid indigo for primary action
+    backgroundColor: '#4f46e5',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,

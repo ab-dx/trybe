@@ -22,18 +22,25 @@ const MainApp: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<TabName>("Feed");
 	const [authScreen, setAuthScreen] = useState<AuthScreen>("login");
 
+    const [mapFocus, setMapFocus] = useState<{ latitude: number; longitude: number } | null>(null);
+
+    const handleJumpToMap = (latitude: number, longitude: number) => {
+       setMapFocus({ latitude, longitude });
+       setActiveTab("Map");
+    };
+
 	const renderScreen = () => {
-		switch (activeTab) {
-			case "Feed":
-				return <FeedScreen />;
-			case "Map":
-				return <MapScreen />;
-			case "Activity":
-				return <ActivityScreen />;
-			case "Profile":
-				return <ProfileScreen />;
-		}
-	};
+       switch (activeTab) {
+          case "Feed":
+             // Pass the jump function to the Feed
+             return <FeedScreen onJumpToMap={handleJumpToMap} />;
+          case "Map":
+             // Pass the focus coordinates to the MapScreen
+             return <MapScreen initialRegion={mapFocus} onMapMoved={() => setMapFocus(null)} />;
+          case "Activity":
+             return <ActivityScreen />;
+       }
+    };
 
 	if (isLoading) {
 		return null;

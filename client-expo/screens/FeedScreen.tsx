@@ -5,7 +5,11 @@ import { useAuth } from '../lib/auth/AuthContext';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
 
-export const FeedScreen: React.FC = () => {
+interface FeedScreenProps {
+  onJumpToMap: (lat: number, lng: number) => void;
+}
+
+export const FeedScreen: React.FC = ({ onJumpToMap }) => {
   const { user } = useAuth();
 
   const [activities, setActivities] = useState<ActivityProps[]>([]);
@@ -15,7 +19,7 @@ export const FeedScreen: React.FC = () => {
   const fetchFeed = async () => {
     try {
 
-      const queryParams = '?minLat=25.0&maxLat=26.0&minLng=84.0&maxLng=85.0';
+      const queryParams = '?minLat=00.0&maxLat=90.0&minLng=00.0&maxLng=180.0';
 
       const response = await fetch(`${API_URL}/activities${queryParams}`, {
         method: 'GET',
@@ -66,7 +70,15 @@ export const FeedScreen: React.FC = () => {
       <FlatList
         data={activities}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ActivityCard activity={item} />}
+        renderItem={({ item }) => (
+          <ActivityCard
+            activity={item}
+            onPressLocation={() => {
+              const [lng, lat] = item.location.coordinates;
+              onJumpToMap(lat, lng);
+            }}
+          />
+        )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         refreshControl={
