@@ -1,64 +1,143 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import MapView, { Marker, UrlTile } from "react-native-maps";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import MapView, { Marker, UrlTile, Region, Callout } from "react-native-maps";
+import * as Location from "expo-location";
 
-const INITIAL_ACTIVITIES = [
-	{
-		id: "1",
-		title: "Sunset 5K Run",
-		type: "Sports",
-		lat: 37.78825,
-		lng: -122.4324,
-	},
-	{
-		id: "2",
-		title: "Acoustic Jam Session",
-		type: "Music",
-		lat: 37.78925,
-		lng: -122.4344,
-	},
-];
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
+const ZOOM_THRESHOLD = 0.15;
+
+
+const FALLBACK_REGION: Region = {
+	latitude: 25.5941,
+	longitude: 85.1376,
+	latitudeDelta: 0.05,
+	longitudeDelta: 0.05,
+};
+
+interface Activity {
+	id: string;
+	title: string;
+	description?: string;
+	latitude: number;
+	longitude: number;
+	startTime: string;
+	type?: string;
+}
 
 export default function RadarMap() {
-	const [region, setRegion] = useState({
-		latitude: 37.78825,
-		longitude: -122.4324,
-		latitudeDelta: 0.05, // Controls the initial zoom height
-		longitudeDelta: 0.05, // Controls the initial zoom width
-	});
+	const mapRef = useRef<MapView>(null);
+	const [activities, setActivities] = useState<any[]>([]);
+	const [isFetching, setIsFetching] = useState(false);
+	const [isZoomedOut, setIsZoomedOut] = useState(false);
+
+	useEffect(() => {
+		(async () => {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== "granted") {
+				console.warn("Location permission denied. Using fallback region.");
+				fetchActivitiesInBounds(FALLBACK_REGION);
+				return;
+			}
+
+			try {
+				const location = await Location.getCurrentPositionAsync({
+					accuracy: Location.Accuracy.Balanced,
+				});
+
+				const userRegion = {
+					latitude: location.coords.latitude,
+					longitude: location.coords.longitude,
+					latitudeDelta: 0.05,
+					longitudeDelta: 0.05,
+				};
+				mapRef.current?.animateToRegion(userRegion, 1000);
+				fetchActivitiesInBounds(userRegion);
+			} catch (error) {
+				console.error("Error fetching location:", error);
+				fetchActivitiesInBounds(FALLBACK_REGION);
+			}
+		})();
+	}, []);
+
+	// 2. Fetch Activities Based on Map Viewport
+	const fetchActivitiesInBounds = useCallback(async (region: Region) => {
+		if (region.latitudeDelta > ZOOM_THRESHOLD) {
+			setIsZoomedOut(true);
+			setActivities([]); 
+			return;
+		}
+
+		setIsZoomedOut(false);
+		setIsFetching(true);
+
+		const minLat = region.latitude - region.latitudeDelta / 2;
+		const maxLat = region.latitude + region.latitudeDelta / 2;
+		const minLng = region.longitude - region.longitudeDelta / 2;
+		const maxLng = region.longitude + region.longitudeDelta / 2;
+
+		try {
+			const response = await fetch(
+				`${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`
+			);
+
+			if (!response.ok) throw new Error("Failed to fetch activities");
+
+			const data = await response.json();
+			setActivities(data);
+			console.log(JSON.stringify(data));
+		} catch (error) {
+			console.error("Radar Error:", error);
+		} finally {
+			setIsFetching(false);
+		}
+	}, []);
 
 	return (
-		<View
-			style={{ flex: 1, width: "100%", borderRadius: 20, overflow: "hidden" }}
-		>
-			<MapView
+		<View style={styles.container}>
+
+		<MapView
+				ref={mapRef}
 				style={styles.map}
-				initialRegion={region} // Using initialRegion allows free panning without snapping back
-				//mapType="none"
+				initialRegion={FALLBACK_REGION}
 				showsUserLocation={true}
-				scrollEnabled={true} // Enabled by default, but explicitly written here for clarity
-				zoomEnabled={true} // Enabled by default
-				pitchEnabled={true} // Allows 3D tilting with two fingers
-				rotateEnabled={true} // Allows rotating the map with two fingers
+				showsMyLocationButton={true}
+				scrollEnabled={true}
+				zoomEnabled={true}
+				pitchEnabled={true}
+				rotateEnabled={true}
+				onRegionChangeComplete={fetchActivitiesInBounds}
 			>
-				{/* The library automatically injects the numbers into {z}, {x}, and {y} */}
 				<UrlTile
 					urlTemplate="https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
 					maximumZ={19}
 					flipY={false}
 				/>
 
-				{INITIAL_ACTIVITIES.map((activity) => (
-					<Marker
-						key={activity.id}
-						coordinate={{ latitude: activity.lat, longitude: activity.lng }}
-						title={activity.title}
-						description={activity.type}
-						pinColor={activity.type === "Music" ? "blue" : "red"}
-					/>
-				))}
+				{}
+				{activities.map((activity) => {
+					const lat = parseFloat(activity.location.coordinates[1] as any);
+					const lng = parseFloat(activity.location.coordinates[0] as any);
+					if (isNaN(lat) || isNaN(lng)) {
+						console.warn(`Activity ${activity.id} has invalid coordinates. Skipping.`);
+						return null; 
+					}
+					// console.log(lat, " ");
+					// console.log(lng, "bitchass");
+					return (
+						<Marker
+							key={activity.id}
+							coordinate={{ latitude: lat, longitude: lng }}
+							pinColor="red"
+							title={activity.title}
+							description={activity.description}
+						/>
+					);
+				})}
 			</MapView>
 
+
+
+			
 			<View style={styles.attributionContainer} pointerEvents="none">
 				<View style={styles.attributionBackground}>
 					<Text style={styles.attributionText}>© OpenStreetMap, © CARTO</Text>
@@ -69,20 +148,53 @@ export default function RadarMap() {
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: "#000" },
+	container: { flex: 1, width: "100%", borderRadius: 20, overflow: "hidden", position: "relative" },
 	map: { flex: 1 },
-	attributionContainer: {
+	calloutContainer: {
+		width: 200,
+		padding: 8,
+		borderRadius: 12,
+	},
+	calloutTitle: {
+		fontWeight: "bold",
+		fontSize: 16,
+		marginBottom: 4,
+		color: "#1a1a1a",
+	},
+	calloutDescription: {
+		fontSize: 14,
+		color: "#666",
+		marginBottom: 6,
+	},
+	calloutTime: {
+		fontSize: 12,
+		fontWeight: "600",
+		color: "#007AFF",
+	},
+	overlayMessage: {
 		position: "absolute",
-		bottom: 16,
-		left: 0,
-		right: 0,
-		alignItems: "center",
+		top: 20,
+		alignSelf: "center",
+		backgroundColor: "rgba(0, 0, 0, 0.75)",
+		paddingHorizontal: 16,
+		paddingVertical: 8,
+		borderRadius: 20,
 	},
-	attributionBackground: {
-		backgroundColor: "rgba(255, 255, 255, 0.8)",
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-		borderRadius: 6,
+	overlayText: { color: "white", fontWeight: "600", fontSize: 14 },
+	loadingContainer: {
+		position: "absolute",
+		top: 20,
+		right: 20,
+		backgroundColor: "rgba(255, 255, 255, 0.9)",
+		padding: 8,
+		borderRadius: 20,
+		elevation: 3,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 2,
 	},
+	attributionContainer: { position: "absolute", bottom: 16, left: 0, right: 0, alignItems: "center" },
+	attributionBackground: { backgroundColor: "rgba(255, 255, 255, 0.8)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
 	attributionText: { fontSize: 12, color: "#333333", fontWeight: "500" },
 });
