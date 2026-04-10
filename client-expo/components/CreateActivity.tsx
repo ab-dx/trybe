@@ -78,7 +78,7 @@ export default function CreateActivity({ navigation }) {
 			};
 
 			const response = await fetch(
-				`http://${process.env.EXPO_PUBLIC_API_URL}/activities`,
+				`${process.env.EXPO_PUBLIC_API_URL}/activities`,
 				{
 					method: "POST",
 					headers: {
