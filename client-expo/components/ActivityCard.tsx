@@ -15,6 +15,7 @@ export interface ActivityProps {
 }
 
 export const ActivityCard: React.FC<{ activity: ActivityProps }> = ({ activity }) => {
+  // Format the date/time from the PostgreSQL timestamp
   const dateObj = new Date(activity.startTime);
   const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const formattedDate = dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
@@ -49,7 +50,7 @@ export const ActivityCard: React.FC<{ activity: ActivityProps }> = ({ activity }
         </Text>
       ) : null}
 
-      {/* Footer: Time & Action */}
+      {/* Footer: Time & Actions */}
       <View style={styles.footer}>
         <View style={styles.timeInfo}>
           <Text style={styles.timeIcon}>🕒</Text>
@@ -58,9 +59,16 @@ export const ActivityCard: React.FC<{ activity: ActivityProps }> = ({ activity }
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.actionButton} activeOpacity={0.8}>
-          <Text style={styles.actionButtonText}>Hype / Join</Text>
-        </TouchableOpacity>
+        {/* Split Action Buttons */}
+        <View style={styles.actionContainer}>
+          <TouchableOpacity style={styles.hypeButton} activeOpacity={0.7}>
+            <Text style={styles.hypeButtonText}>🔥 Hype</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.joinButton} activeOpacity={0.8}>
+            <Text style={styles.joinButtonText}>Join</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -144,6 +152,7 @@ const styles = StyleSheet.create({
   timeInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1, // Allows time text to take up available space
   },
   timeIcon: {
     marginRight: 8,
@@ -151,18 +160,36 @@ const styles = StyleSheet.create({
   },
   timeText: {
     color: '#cbd5e1',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
-  actionButton: {
-    backgroundColor: '#4f46e5',
+  actionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  hypeButton: {
+    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Subtle indigo tint
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.4)', // Outlined look
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  hypeButtonText: {
+    color: '#818cf8', // Lighter indigo for text
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  joinButton: {
+    backgroundColor: '#4f46e5', // Solid indigo for primary action
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  actionButtonText: {
+  joinButtonText: {
     color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
   },
 });
