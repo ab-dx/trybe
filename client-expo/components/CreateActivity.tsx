@@ -81,14 +81,17 @@ export default function CreateActivity({ navigation }) {
 
 			// 5. Fire the request with the Bearer token
 			// Make sure to replace 'YOUR_LOCAL_OR_PROD_URL' with your actual NestJS endpoint
-			const response = await fetch("http://10.112.219.33:3000/activities", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+			const response = await fetch(
+				`http://${process.env.EXPO_PUBLIC_API_URL}:3000/activities`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${token}`,
+					},
+					body: JSON.stringify(payload),
 				},
-				body: JSON.stringify(payload),
-			});
+			);
 
 			if (!response.ok) {
 				// Log the actual backend error for easier debugging

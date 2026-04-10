@@ -6,7 +6,6 @@ import * as Location from "expo-location";
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
 const ZOOM_THRESHOLD = 0.15;
 
-
 const FALLBACK_REGION: Region = {
 	latitude: 25.5941,
 	longitude: 85.1376,
@@ -63,7 +62,7 @@ export default function RadarMap() {
 	const fetchActivitiesInBounds = useCallback(async (region: Region) => {
 		if (region.latitudeDelta > ZOOM_THRESHOLD) {
 			setIsZoomedOut(true);
-			setActivities([]); 
+			setActivities([]);
 			return;
 		}
 
@@ -77,7 +76,7 @@ export default function RadarMap() {
 
 		try {
 			const response = await fetch(
-				`${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`
+				`${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`,
 			);
 
 			if (!response.ok) throw new Error("Failed to fetch activities");
@@ -94,8 +93,7 @@ export default function RadarMap() {
 
 	return (
 		<View style={styles.container}>
-
-		<MapView
+			<MapView
 				ref={mapRef}
 				style={styles.map}
 				initialRegion={FALLBACK_REGION}
@@ -118,8 +116,10 @@ export default function RadarMap() {
 					const lat = parseFloat(activity.location.coordinates[1] as any);
 					const lng = parseFloat(activity.location.coordinates[0] as any);
 					if (isNaN(lat) || isNaN(lng)) {
-						console.warn(`Activity ${activity.id} has invalid coordinates. Skipping.`);
-						return null; 
+						console.warn(
+							`Activity ${activity.id} has invalid coordinates. Skipping.`,
+						);
+						return null;
 					}
 					// console.log(lat, " ");
 					// console.log(lng, "bitchass");
@@ -135,9 +135,6 @@ export default function RadarMap() {
 				})}
 			</MapView>
 
-
-
-			
 			<View style={styles.attributionContainer} pointerEvents="none">
 				<View style={styles.attributionBackground}>
 					<Text style={styles.attributionText}>© OpenStreetMap, © CARTO</Text>
@@ -148,7 +145,13 @@ export default function RadarMap() {
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, width: "100%", borderRadius: 20, overflow: "hidden", position: "relative" },
+	container: {
+		flex: 1,
+		width: "100%",
+		borderRadius: 20,
+		overflow: "hidden",
+		position: "relative",
+	},
 	map: { flex: 1 },
 	calloutContainer: {
 		width: 200,
@@ -194,7 +197,18 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.2,
 		shadowRadius: 2,
 	},
-	attributionContainer: { position: "absolute", bottom: 16, left: 0, right: 0, alignItems: "center" },
-	attributionBackground: { backgroundColor: "rgba(255, 255, 255, 0.8)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+	attributionContainer: {
+		position: "absolute",
+		bottom: 16,
+		left: 0,
+		right: 0,
+		alignItems: "center",
+	},
+	attributionBackground: {
+		backgroundColor: "rgba(255, 255, 255, 0.8)",
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		borderRadius: 6,
+	},
 	attributionText: { fontSize: 12, color: "#333333", fontWeight: "500" },
 });
