@@ -47,6 +47,8 @@ const MainApp: React.FC = () => {
 				);
 			case "Activity":
 				return <ActivityScreen />;
+			case "Profile":
+				return <ProfileScreen />;
 		}
 	};
 
