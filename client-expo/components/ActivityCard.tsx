@@ -8,36 +8,37 @@ export interface ActivityProps {
 	description?: string;
 	startTime: string;
 	status: string;
-	// Added the location object based on your database JSON
 	location: {
 		type: string;
 		coordinates: [number, number]; // [longitude, latitude]
 	};
 	host: {
 		id: string;
-		username?: string;
+		username?: string; // This matches your ActivityCard interface
+		displayName?: string; // This matches your User entity
 		trustScore?: number;
 	};
 }
 
 export interface ActivityCardProps {
 	activity: ActivityProps;
-	onPressLocation: () => void; // New prop
+	onPressLocation: () => void;
+	onPressJoin: () => void; // Added this prop to handle RSVP logic
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({
 	activity,
 	onPressLocation,
+	onPressJoin, // Destructure the new prop
 }) => {
 	const [address, setAddress] = useState<string>("Locating...");
 
-	// Reverse Geocoding Effect
+	// Reverse Geocoding Effect to turn coordinates into a readable address
 	useEffect(() => {
 		let isMounted = true;
 
 		const fetchAddress = async () => {
 			try {
-				// GeoJSON uses [longitude, latitude], but Expo needs {latitude, longitude}
 				const [longitude, latitude] = activity.location.coordinates;
 
 				const geocodeResult = await Location.reverseGeocodeAsync({
@@ -47,7 +48,6 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
 				if (isMounted && geocodeResult.length > 0) {
 					const place = geocodeResult[0];
-					// Try to get the most specific landmark name, fallback to street, then city
 					const specificName = place.name || place.street;
 					const region = place.city || place.subregion || place.region;
 
@@ -68,11 +68,10 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 		fetchAddress();
 
 		return () => {
-			isMounted = false; // Cleanup to prevent state updates if unmounted
+			isMounted = false; 
 		};
 	}, [activity.location]);
 
-	// Format the date/time
 	const dateObj = new Date(activity.startTime);
 	const formattedTime = dateObj.toLocaleTimeString([], {
 		hour: "2-digit",
@@ -83,6 +82,9 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 		day: "numeric",
 	});
 
+	// Helper to get name from either username or displayName
+	const hostDisplayName = activity.host?.username || activity.host?.displayName || "Unknown Host";
+
 	return (
 		<View style={styles.card}>
 			{/* Header: Host & Trust Score */}
@@ -90,11 +92,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 				<View style={styles.hostInfo}>
 					<View style={styles.avatar}>
 						<Text style={styles.avatarText}>
-							{activity.host?.username?.charAt(0).toUpperCase() || "U"}
+							{hostDisplayName.charAt(0).toUpperCase()}
 						</Text>
 					</View>
 					<Text style={styles.hostName}>
-						{activity.host?.username || "Unknown Host"}
+						{hostDisplayName}
 					</Text>
 				</View>
 
@@ -110,7 +112,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
 			{/* Body: Title & Details */}
 			<Text style={styles.title}>{activity.title}</Text>
-			{/* 📍 NEW: Location Landmark Display */}
+			
 			<TouchableOpacity
 				style={styles.locationContainer}
 				onPress={onPressLocation}
@@ -131,19 +133,22 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 			{/* Footer: Time & Actions */}
 			<View style={styles.footer}>
 				<View style={styles.timeInfo}>
-					<Text style={styles.timeIcon}>🕒</Text>
+					<Text style={styles.timeIcon}>📅</Text>
 					<Text style={styles.timeText}>
 						{formattedDate} • {formattedTime}
 					</Text>
 				</View>
 
-				{/* Split Action Buttons */}
 				<View style={styles.actionContainer}>
 					<TouchableOpacity style={styles.hypeButton} activeOpacity={0.7}>
 						<Text style={styles.hypeButtonText}>🔥 Hype</Text>
 					</TouchableOpacity>
 
-					<TouchableOpacity style={styles.joinButton} activeOpacity={0.8}>
+					<TouchableOpacity 
+						style={styles.joinButton} 
+						activeOpacity={0.8}
+						onPress={onPressJoin} // Wire up the RSVP logic here
+					>
 						<Text style={styles.joinButtonText}>Join</Text>
 					</TouchableOpacity>
 				</View>
@@ -152,6 +157,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 	);
 };
 
+// ... styles remain the same as your original ActivityCard.tsx
 const styles = StyleSheet.create({
 	card: {
 		backgroundColor: "rgba(30, 41, 59, 0.8)",
@@ -210,7 +216,6 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontSize: 20,
 		fontWeight: "bold",
-		marginBottom: 4,
 		marginBottom: 6,
 	},
 	locationContainer: {
@@ -223,7 +228,7 @@ const styles = StyleSheet.create({
 		fontSize: 14,
 	},
 	locationText: {
-		color: "#38bdf8", // Light blue to make the location pop
+		color: "#38bdf8",
 		fontSize: 14,
 		fontWeight: "500",
 		flex: 1,
