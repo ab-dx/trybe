@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+	View,
+	Text,
+	TouchableOpacity,
+	StyleSheet,
+	ActivityIndicator,
+} from "react-native";
 import * as Location from "expo-location";
 
 export interface ActivityProps {
@@ -14,8 +20,8 @@ export interface ActivityProps {
 	};
 	host: {
 		id: string;
-		username?: string; // This matches your ActivityCard interface
-		displayName?: string; // This matches your User entity
+		username?: string;
+		displayName?: string;
 		trustScore?: number;
 	};
 }
@@ -23,17 +29,20 @@ export interface ActivityProps {
 export interface ActivityCardProps {
 	activity: ActivityProps;
 	onPressLocation: () => void;
-	onPressJoin: () => void; // Added this prop to handle RSVP logic
+	onPressJoin: () => void;
+	isJoined?: boolean; // NEW: Tells the card if the user is already RSVP'd
+	isJoining?: boolean; // NEW: Prevents spam clicks while the network request is inflight
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({
 	activity,
 	onPressLocation,
-	onPressJoin, // Destructure the new prop
+	onPressJoin,
+	isJoined = false, // Default to false if not provided
+	isJoining = false,
 }) => {
 	const [address, setAddress] = useState<string>("Locating...");
 
-	// Reverse Geocoding Effect to turn coordinates into a readable address
 	useEffect(() => {
 		let isMounted = true;
 
@@ -68,7 +77,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 		fetchAddress();
 
 		return () => {
-			isMounted = false; 
+			isMounted = false;
 		};
 	}, [activity.location]);
 
@@ -82,8 +91,8 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 		day: "numeric",
 	});
 
-	// Helper to get name from either username or displayName
-	const hostDisplayName = activity.host?.username || activity.host?.displayName || "Unknown Host";
+	const hostDisplayName =
+		activity.host?.username || activity.host?.displayName || "Unknown Host";
 
 	return (
 		<View style={styles.card}>
@@ -95,9 +104,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 							{hostDisplayName.charAt(0).toUpperCase()}
 						</Text>
 					</View>
-					<Text style={styles.hostName}>
-						{hostDisplayName}
-					</Text>
+					<Text style={styles.hostName}>{hostDisplayName}</Text>
 				</View>
 
 				<View style={styles.trustBadge}>
@@ -112,7 +119,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
 			{/* Body: Title & Details */}
 			<Text style={styles.title}>{activity.title}</Text>
-			
+
 			<TouchableOpacity
 				style={styles.locationContainer}
 				onPress={onPressLocation}
@@ -144,12 +151,32 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 						<Text style={styles.hypeButtonText}>🔥 Hype</Text>
 					</TouchableOpacity>
 
-					<TouchableOpacity 
-						style={styles.joinButton} 
+					{/* NEW: Dynamic Join Button */}
+					<TouchableOpacity
+						style={[
+							styles.joinButton,
+							isJoined && styles.joinedButton, // Apply disabled styling
+						]}
 						activeOpacity={0.8}
-						onPress={onPressJoin} // Wire up the RSVP logic here
+						onPress={onPressJoin}
+						disabled={isJoined || isJoining} // Lock button if already joined or inflight
 					>
-						<Text style={styles.joinButtonText}>Join</Text>
+						{isJoining ? (
+							<ActivityIndicator
+								size="small"
+								color="#ffffff"
+								style={{ paddingHorizontal: 10 }}
+							/>
+						) : (
+							<Text
+								style={[
+									styles.joinButtonText,
+									isJoined && styles.joinedButtonText,
+								]}
+							>
+								{isJoined ? "Joined ✓" : "Join"}
+							</Text>
+						)}
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -157,7 +184,6 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 	);
 };
 
-// ... styles remain the same as your original ActivityCard.tsx
 const styles = StyleSheet.create({
 	card: {
 		backgroundColor: "rgba(30, 41, 59, 0.8)",
@@ -280,15 +306,28 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		fontSize: 13,
 	},
+	// --- JOIN BUTTON STYLES ---
 	joinButton: {
 		backgroundColor: "#4f46e5",
 		paddingHorizontal: 16,
 		paddingVertical: 8,
 		borderRadius: 20,
+		minWidth: 70, // Prevents button shrinking when text changes to "Joined"
+		alignItems: "center",
+		justifyContent: "center",
 	},
 	joinButtonText: {
 		color: "#ffffff",
 		fontWeight: "bold",
 		fontSize: 13,
+	},
+	// Add these new styles for the disabled state
+	joinedButton: {
+		backgroundColor: "transparent",
+		borderWidth: 1,
+		borderColor: "#475569",
+	},
+	joinedButtonText: {
+		color: "#94a3b8",
 	},
 });
