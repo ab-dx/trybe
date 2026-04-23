@@ -1,7 +1,12 @@
 import { View, Text, StyleSheet } from "react-native";
 import RadarMap from "../components/RadarMap";
 
-export const MapScreen = () => {
+interface MapScreenProps {
+	initialRegion?: { latitude: number; longitude: number } | null;
+	onMapMoved?: () => void;
+}
+
+export const MapScreen: React.FC<MapScreenProps> = () => {
 	return (
 		<View
 			style={{

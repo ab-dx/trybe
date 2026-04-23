@@ -17,12 +17,12 @@ export class Rsvp {
   @PrimaryColumn('uuid')
   activityId: string;
 
-  @ManyToOne(() => User, (user) => user.activities, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id' })
+  @ManyToOne(() => User, (user) => user.rsvps, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
   user: User;
 
   @ManyToOne(() => Activity, (activity) => activity.rsvps, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'activity_id' })
+  @JoinColumn({ name: 'activityId' })
   activity: Activity;
 
   @Column({ default: false })

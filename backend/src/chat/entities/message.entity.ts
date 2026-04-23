@@ -21,11 +21,11 @@ export class Message {
   senderId: string;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: 'sender_id' })
+  @JoinColumn({ name: 'senderId' })
   sender: User;
 
   @ManyToOne(() => Activity, (activity) => activity.messages, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'activity_id' })
+  @JoinColumn({ name: 'activityId' })
   activity: Activity;
 
   @Column('text')

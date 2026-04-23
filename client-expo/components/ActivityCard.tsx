@@ -32,6 +32,7 @@ export interface ActivityCardProps {
 	onPressJoin: () => void;
 	isJoined?: boolean; // NEW: Tells the card if the user is already RSVP'd
 	isJoining?: boolean; // NEW: Prevents spam clicks while the network request is inflight
+	isHostedByMe?: boolean;
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({
@@ -40,6 +41,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 	onPressJoin,
 	isJoined = false, // Default to false if not provided
 	isJoining = false,
+	isHostedByMe = false,
 }) => {
 	const [address, setAddress] = useState<string>("Locating...");
 
@@ -93,6 +95,12 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
 	const hostDisplayName =
 		activity.host?.username || activity.host?.displayName || "Unknown Host";
+	const joinButtonDisabled = isHostedByMe || isJoined || isJoining;
+	const joinButtonLabel = isHostedByMe
+		? "Hosting"
+		: isJoined
+			? "Joined ✓"
+			: "Join";
 
 	return (
 		<View style={styles.card}>
@@ -155,11 +163,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 					<TouchableOpacity
 						style={[
 							styles.joinButton,
-							isJoined && styles.joinedButton, // Apply disabled styling
+							(isHostedByMe || isJoined) && styles.joinedButton,
 						]}
 						activeOpacity={0.8}
 						onPress={onPressJoin}
-						disabled={isJoined || isJoining} // Lock button if already joined or inflight
+						disabled={joinButtonDisabled}
 					>
 						{isJoining ? (
 							<ActivityIndicator
@@ -171,10 +179,10 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 							<Text
 								style={[
 									styles.joinButtonText,
-									isJoined && styles.joinedButtonText,
+									(isHostedByMe || isJoined) && styles.joinedButtonText,
 								]}
 							>
-								{isJoined ? "Joined ✓" : "Join"}
+								{joinButtonLabel}
 							</Text>
 						)}
 					</TouchableOpacity>

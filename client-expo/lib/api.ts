@@ -28,10 +28,22 @@ export function fetchProfile() {
   return authFetch('/users/me');
 }
 
+export function joinActivity(activityId: string) {
+  return authFetch(`/activities/${activityId}/rsvp`, {
+    method: 'POST',
+  });
+}
+
 export function fetchMyRsvps() {
   return authFetch('/users/me/rsvps');
 }
 
 export function fetchMyHosted() {
   return authFetch('/users/me/hosted');
+}
+
+export function endHostedActivity(activityId: string) {
+  return authFetch(`/activities/${activityId}/end`, {
+    method: 'PATCH',
+  });
 }

@@ -9,12 +9,11 @@ import {
   Query, 
   UseGuards, 
   Req,
-  ForbiddenException 
 } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { Request } from 'express';
-import { Visibility } from './entities/activity.entity';
+import { ActivityStatus, Visibility } from './entities/activity.entity';
 
 interface AuthenticatedRequest extends Request {
   user: { id: string };
@@ -89,7 +88,7 @@ export class ActivitiesController {
       startTime?: string;
       endTime?: string;
       visibility?: Visibility;
-      status?: string;
+      status?: ActivityStatus;
     },
   ) {
     const updateData: any = { ...data };
@@ -97,6 +96,15 @@ export class ActivitiesController {
     if (data.endTime) updateData.endTime = new Date(data.endTime);
 
     return this.activitiesService.update(id, updateData, req.user.id);
+  }
+
+  @Patch(':id/end')
+  @UseGuards(AuthGuard)
+  async endActivity(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.activitiesService.endActivity(id, req.user.id);
   }
 
   @Delete(':id')

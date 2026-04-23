@@ -16,7 +16,7 @@ import MapView, { Marker, UrlTile } from "react-native-maps";
 // 1. Import your custom auth hook
 import { useAuth } from "../lib/auth/AuthContext";
 
-export default function CreateActivity({ navigation }) {
+export default function CreateActivity() {
 	const { user } = useAuth();
 
 	const [title, setTitle] = useState("");

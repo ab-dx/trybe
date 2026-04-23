@@ -8,26 +8,39 @@ import {
 	TouchableOpacity,
 	ActivityIndicator,
 	RefreshControl,
+	Alert,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "../lib/auth/AuthContext";
-import { fetchProfile, fetchMyRsvps } from "../lib/api";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3000";
+import {
+	endHostedActivity,
+	fetchMyHosted,
+	fetchMyRsvps,
+	fetchProfile,
+} from "../lib/api";
 
 interface ActivityItem {
 	id: string;
 	title: string;
 	description?: string;
 	startTime: string;
+	endTime?: string;
 	status: string;
+	hostId?: string;
 	host?: { displayName?: string; email?: string };
 }
 
 interface RsvpItem {
-	id: string;
+	userId: string;
+	activityId: string;
 	checkedIn: boolean;
 	activity: ActivityItem;
+}
+
+interface PastActivityItem {
+	activity: ActivityItem;
+	checkedIn: boolean;
+	source: "HOSTED" | "RSVP";
 }
 
 interface ProfileData {
@@ -42,24 +55,77 @@ interface ProfileData {
 	checkIns: number;
 }
 
+const ENDED_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
+
+const isActivityPast = (activity?: ActivityItem | null) => {
+	if (!activity) return false;
+	if (ENDED_STATUSES.has(activity.status)) return true;
+	if (!activity.endTime) return false;
+
+	const endTime = new Date(activity.endTime);
+	return !Number.isNaN(endTime.getTime()) && endTime.getTime() <= Date.now();
+};
+
+const sortByStartTimeAsc = (left: ActivityItem, right: ActivityItem) =>
+	new Date(left.startTime).getTime() - new Date(right.startTime).getTime();
+
+const sortPastActivities = (left: PastActivityItem, right: PastActivityItem) =>
+	new Date(right.activity.startTime).getTime() -
+	new Date(left.activity.startTime).getTime();
+
+const buildPastActivities = (
+	hostedActivities: ActivityItem[],
+	rsvps: RsvpItem[],
+): PastActivityItem[] => {
+	const items = new Map<string, PastActivityItem>();
+
+	for (const activity of hostedActivities) {
+		if (!isActivityPast(activity)) continue;
+
+		items.set(activity.id, {
+			activity,
+			checkedIn: false,
+			source: "HOSTED",
+		});
+	}
+
+	for (const rsvp of rsvps) {
+		if (!rsvp.activity || !isActivityPast(rsvp.activity)) continue;
+
+		const existing = items.get(rsvp.activity.id);
+		items.set(rsvp.activity.id, {
+			activity: rsvp.activity,
+			checkedIn: existing?.checkedIn || rsvp.checkedIn,
+			source: existing?.source || "RSVP",
+		});
+	}
+
+	return [...items.values()].sort(sortPastActivities);
+};
+
 export const ProfileScreen: React.FC = () => {
 	const { user, logout } = useAuth();
 	const [profile, setProfile] = useState<ProfileData | null>(null);
-
-	// State for the RSVPs fetched from /users/me/rsvps
+	const [activeHostedActivities, setActiveHostedActivities] = useState<
+		ActivityItem[]
+	>([]);
 	const [upcomingRsvps, setUpcomingRsvps] = useState<RsvpItem[]>([]);
-	const [pastRsvps, setPastRsvps] = useState<RsvpItem[]>([]);
+	const [pastActivities, setPastActivities] = useState<PastActivityItem[]>([]);
 
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
+	const [endingActivityId, setEndingActivityId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const loadProfileData = useCallback(async () => {
 		try {
 			setError(null);
+			const [profileData, hostedResponse, rsvpResponse] = await Promise.all([
+				fetchProfile(),
+				fetchMyHosted(),
+				fetchMyRsvps(),
+			]);
 
-			// 1. Fetch General Profile Stats (from /users/me)
-			const profileData = await fetchProfile();
 			setProfile({
 				...profileData,
 				trustScore: profileData.trustScore ?? 0,
@@ -68,28 +134,24 @@ export const ProfileScreen: React.FC = () => {
 				checkIns: profileData.checkIns ?? 0,
 			});
 
-			// 2. Fetch User RSVPs (from your existing /users/me/rsvps)
-			if (user) {
-				// @ts-ignore - Assuming Firebase Auth
-				const token = await user.getIdToken();
-				// const rsvpResponse = await fetch(`${API_URL}/users/me/rsvps`, {
-				//   headers: { Authorization: `Bearer ${token}` }
-				// });
+			const hostedActivities: ActivityItem[] = hostedResponse ?? [];
+			const rsvps: RsvpItem[] = (rsvpResponse ?? []).filter(
+				(rsvp: RsvpItem) => !!rsvp.activity,
+			);
 
-				const rsvpResponse = await fetchMyRsvps();
-				const rsvps: RsvpItem[] = await rsvpResponse;
-				console.log(JSON.stringify(rsvps));
-				const now = new Date();
-				// Split into upcoming and past based on the nested activity's start time
-				const upcoming = rsvps.filter(
-					(r) => r.activity && new Date(r.activity.startTime) >= now,
-				);
-				const past = rsvps.filter(
-					(r) => r.activity && new Date(r.activity.startTime) < now,
-				);
-				setUpcomingRsvps(upcoming);
-				setPastRsvps(past);
-			}
+			setActiveHostedActivities(
+				hostedActivities
+					.filter((activity) => !isActivityPast(activity))
+					.sort(sortByStartTimeAsc),
+			);
+			setUpcomingRsvps(
+				rsvps
+					.filter((rsvp) => !isActivityPast(rsvp.activity))
+					.sort((left, right) =>
+						sortByStartTimeAsc(left.activity, right.activity),
+					),
+			);
+			setPastActivities(buildPastActivities(hostedActivities, rsvps));
 		} catch (err: any) {
 			setError("Could not load profile data");
 			console.error("Profile fetch error:", err);
@@ -97,7 +159,7 @@ export const ProfileScreen: React.FC = () => {
 			setLoading(false);
 			setRefreshing(false);
 		}
-	}, [user]);
+	}, []);
 
 	useEffect(() => {
 		loadProfileData();
@@ -112,6 +174,39 @@ export const ProfileScreen: React.FC = () => {
 		try {
 			await logout();
 		} catch {}
+	};
+
+	const runEndActivity = async (activityId: string) => {
+		try {
+			setEndingActivityId(activityId);
+			await endHostedActivity(activityId);
+			await loadProfileData();
+		} catch (err: any) {
+			console.error("End activity error:", err);
+			Alert.alert(
+				"Could not end activity",
+				err?.message || "Please try again in a moment.",
+			);
+		} finally {
+			setEndingActivityId(null);
+		}
+	};
+
+	const handleEndActivity = (activityId: string) => {
+		Alert.alert(
+			"End this activity?",
+			"It will be removed from active lists and moved to Past Activities.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "End Activity",
+					style: "destructive",
+					onPress: () => {
+						void runEndActivity(activityId);
+					},
+				},
+			],
+		);
 	};
 
 	const getInitial = (name?: string | null) => {
@@ -136,6 +231,30 @@ export const ProfileScreen: React.FC = () => {
 			hour: "numeric",
 			minute: "2-digit",
 		});
+	};
+
+	const getPastBadge = (item: PastActivityItem) => {
+		if (item.source === "HOSTED") {
+			return {
+				backgroundColor: "#422006",
+				color: "#f59e0b",
+				label: "HOSTED",
+			};
+		}
+
+		if (item.checkedIn) {
+			return {
+				backgroundColor: "#064e3b",
+				color: "#10b981",
+				label: "CHECKED IN",
+			};
+		}
+
+		return {
+			backgroundColor: "#1e1b4b",
+			color: "#8b5cf6",
+			label: "ENDED",
+		};
 	};
 
 	if (loading) {
@@ -239,7 +358,68 @@ export const ProfileScreen: React.FC = () => {
 				))}
 			</View>
 
-			{/* ── Upcoming RSVPs ── */}
+			<View style={styles.sectionHeader}>
+				<Feather name="flag" size={18} color="#f59e0b" />
+				<Text style={styles.sectionTitle}>Hosted by Me</Text>
+				<View style={[styles.badge, { backgroundColor: "#422006" }]}>
+					<Text style={[styles.badgeText, { color: "#f59e0b" }]}>
+						{activeHostedActivities.length}
+					</Text>
+				</View>
+			</View>
+
+			{activeHostedActivities.length === 0 ? (
+				<View style={styles.emptyState}>
+					<Ionicons name="flag-outline" size={36} color="#334155" />
+					<Text style={styles.emptyText}>No active hosted events</Text>
+					<Text style={styles.emptySubtext}>
+						Events you end will move into Past Activities.
+					</Text>
+				</View>
+			) : (
+				activeHostedActivities.map((activity) => (
+					<View key={activity.id} style={styles.activityCard}>
+						<View
+							style={[
+								styles.activityIndicator,
+								{ backgroundColor: "#f59e0b" },
+							]}
+						/>
+						<View style={styles.activityInfo}>
+							<Text style={styles.activityTitle}>{activity.title}</Text>
+							<View style={styles.activityMeta}>
+								<Feather name="clock" size={12} color="#64748b" />
+								<Text style={styles.activityTime}>
+									{formatTime(activity.startTime)}
+								</Text>
+							</View>
+						</View>
+						<View style={styles.activityActions}>
+							<View
+								style={[
+									styles.statusBadge,
+									styles.statusUpcoming,
+									styles.compactStatusBadge,
+								]}
+							>
+								<Text style={styles.statusText}>{activity.status}</Text>
+							</View>
+							<TouchableOpacity
+								style={styles.endButton}
+								onPress={() => handleEndActivity(activity.id)}
+								disabled={endingActivityId === activity.id}
+							>
+								{endingActivityId === activity.id ? (
+									<ActivityIndicator size="small" color="#ffffff" />
+								) : (
+									<Text style={styles.endButtonText}>End</Text>
+								)}
+							</TouchableOpacity>
+						</View>
+					</View>
+				))
+			)}
+
 			<View style={styles.sectionHeader}>
 				<Feather name="clock" size={18} color="#3396ff" />
 				<Text style={styles.sectionTitle}>My RSVPs</Text>
@@ -258,7 +438,7 @@ export const ProfileScreen: React.FC = () => {
 				</View>
 			) : (
 				upcomingRsvps.map((rsvp) => (
-					<View key={rsvp.id} style={styles.activityCard}>
+					<View key={`${rsvp.userId}-${rsvp.activityId}`} style={styles.activityCard}>
 						<View style={styles.activityIndicator} />
 						<View style={styles.activityInfo}>
 							<Text style={styles.activityTitle}>{rsvp.activity.title}</Text>
@@ -276,59 +456,65 @@ export const ProfileScreen: React.FC = () => {
 				))
 			)}
 
-			{/* ── Past RSVPs & Check-ins ── */}
 			<View style={[styles.sectionHeader, { marginTop: 28 }]}>
 				<Feather name="archive" size={18} color="#8b5cf6" />
 				<Text style={styles.sectionTitle}>Past Activities</Text>
 				<View style={[styles.badge, { backgroundColor: "#1e1b4b" }]}>
 					<Text style={[styles.badgeText, { color: "#8b5cf6" }]}>
-						{pastRsvps.length}
+						{pastActivities.length}
 					</Text>
 				</View>
 			</View>
 
-			{pastRsvps.length === 0 ? (
+			{pastActivities.length === 0 ? (
 				<View style={styles.emptyState}>
 					<Ionicons name="time-outline" size={36} color="#334155" />
 					<Text style={styles.emptyText}>No past activities yet</Text>
 				</View>
 			) : (
-				pastRsvps.map((rsvp) => (
-					<View key={rsvp.id} style={[styles.activityCard, { opacity: 0.75 }]}>
+				pastActivities.map((item) => {
+					const badge = getPastBadge(item);
+
+					return (
 						<View
-							style={[
-								styles.activityIndicator,
-								{ backgroundColor: rsvp.checkedIn ? "#10b981" : "#8b5cf6" },
-							]}
-						/>
-						<View style={styles.activityInfo}>
-							<Text style={styles.activityTitle}>{rsvp.activity.title}</Text>
-							<View style={styles.activityMeta}>
-								<Feather name="check-circle" size={12} color="#64748b" />
-								<Text style={styles.activityTime}>
-									{formatTime(rsvp.activity.startTime)}
+							key={item.activity.id}
+							style={[styles.activityCard, { opacity: 0.75 }]}
+						>
+							<View
+								style={[
+									styles.activityIndicator,
+									{ backgroundColor: badge.color },
+								]}
+							/>
+							<View style={styles.activityInfo}>
+								<Text style={styles.activityTitle}>{item.activity.title}</Text>
+								<View style={styles.activityMeta}>
+									<Feather name="check-circle" size={12} color="#64748b" />
+									<Text style={styles.activityTime}>
+										{formatTime(item.activity.startTime)}
+									</Text>
+								</View>
+								<Text style={styles.activitySubtext}>
+									{item.source === "HOSTED"
+										? "Hosted by you"
+										: item.checkedIn
+											? "You RSVP'd and checked in"
+											: "You RSVP'd"}
+								</Text>
+							</View>
+							<View
+								style={[
+									styles.statusBadge,
+									{ backgroundColor: badge.backgroundColor },
+								]}
+							>
+								<Text style={[styles.statusText, { color: badge.color }]}>
+									{badge.label}
 								</Text>
 							</View>
 						</View>
-						<View
-							style={[
-								styles.statusBadge,
-								rsvp.checkedIn
-									? { backgroundColor: "#064e3b" }
-									: styles.statusPast,
-							]}
-						>
-							<Text
-								style={[
-									styles.statusText,
-									{ color: rsvp.checkedIn ? "#10b981" : "#8b5cf6" },
-								]}
-							>
-								{rsvp.checkedIn ? "CHECKED IN" : "MISSED"}
-							</Text>
-						</View>
-					</View>
-				))
+					);
+				})
 			)}
 
 			<View style={[styles.sectionHeader, { marginTop: 28 }]}>
@@ -486,6 +672,12 @@ const styles = StyleSheet.create({
 		backgroundColor: "#3396ff",
 	},
 	activityInfo: { flex: 1, paddingVertical: 14, paddingHorizontal: 14 },
+	activityActions: {
+		paddingRight: 14,
+		paddingVertical: 12,
+		alignItems: "flex-end",
+		gap: 8,
+	},
 	activityTitle: { color: "#e2e8f0", fontSize: 15, fontWeight: "600" },
 	activityMeta: {
 		flexDirection: "row",
@@ -494,15 +686,29 @@ const styles = StyleSheet.create({
 		marginTop: 5,
 	},
 	activityTime: { color: "#64748b", fontSize: 12 },
+	activitySubtext: { color: "#475569", fontSize: 12, marginTop: 6 },
 	statusBadge: {
 		marginRight: 14,
 		borderRadius: 6,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 	},
+	compactStatusBadge: {
+		marginRight: 0,
+	},
 	statusUpcoming: { backgroundColor: "#0c2d5a" },
 	statusPast: { backgroundColor: "#1e1b4b" },
 	statusText: { color: "#3396ff", fontSize: 10, fontWeight: "700" },
+	endButton: {
+		minWidth: 72,
+		alignItems: "center",
+		justifyContent: "center",
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+		backgroundColor: "#7f1d1d",
+	},
+	endButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
 	emptyState: {
 		alignItems: "center",
 		paddingVertical: 28,

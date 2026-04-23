@@ -10,11 +10,17 @@ import {
 } from "react-native";
 import { ActivityCard, ActivityProps } from "../components/ActivityCard";
 import { useAuth } from "../lib/auth/AuthContext";
+import { fetchProfile, fetchMyRsvps, joinActivity } from "../lib/api";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
+const API_URL =
+	process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
 
 interface FeedScreenProps {
 	onJumpToMap: (lat: number, lng: number) => void;
+}
+
+interface ProfileSummary {
+	id: string;
 }
 
 export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
@@ -29,25 +35,31 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	const [joiningActivityId, setJoiningActivityId] = useState<string | null>(
 		null,
 	);
+	const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
 
 	// Fetch the user's existing RSVPs so buttons stay accurate on reload
 	const fetchUserRsvps = async () => {
 		if (!user) return;
 		try {
-			// @ts-ignore
-			const token = await user.getIdToken();
-			const response = await fetch(`${API_URL}/users/me/rsvps`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-
-			if (response.ok) {
-				const data = await response.json();
-				// Assuming your RSVP entity returns an array of objects containing the activityId
-				const ids = data.map((rsvp: any) => rsvp.activityId);
-				setRsvpedActivityIds(ids);
-			}
+			const data = await fetchMyRsvps();
+			const ids = data.map((rsvp: any) => rsvp.activityId);
+			setRsvpedActivityIds(ids);
 		} catch (error) {
 			console.error("Could not fetch user RSVPs:", error);
+		}
+	};
+
+	const fetchCurrentProfile = async () => {
+		if (!user) {
+			setCurrentProfileId(null);
+			return;
+		}
+
+		try {
+			const profile = (await fetchProfile()) as ProfileSummary;
+			setCurrentProfileId(profile.id);
+		} catch (error) {
+			console.error("Could not fetch profile:", error);
 		}
 	};
 
@@ -80,12 +92,14 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	useEffect(() => {
 		fetchFeed();
 		fetchUserRsvps();
+		fetchCurrentProfile();
 	}, [user]); // Re-run if user auth state changes
 
 	const onRefresh = () => {
 		setRefreshing(true);
 		fetchFeed();
 		fetchUserRsvps();
+		fetchCurrentProfile();
 	};
 
 	const handleJoin = async (activityId: string) => {
@@ -100,29 +114,12 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 		setJoiningActivityId(activityId); // Trigger the loading spinner on this specific card
 
 		try {
-			// @ts-ignore
-			const token = await user.getIdToken();
-
-			const response = await fetch(`${API_URL}/activities/${activityId}/rsvp`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
-				},
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({}));
-				// Handle constraint errors if the database says they are already RSVP'd
-				if (response.status === 409 || errorData.message?.includes("already")) {
-					setRsvpedActivityIds((prev) => [...prev, activityId]);
-					return;
-				}
-				throw new Error(errorData.message || "Failed to join activity");
-			}
+			await joinActivity(activityId);
 
 			// Optimistically update the UI to show "Joined ✓" immediately
-			setRsvpedActivityIds((prev) => [...prev, activityId]);
+			setRsvpedActivityIds((prev) =>
+				prev.includes(activityId) ? prev : [...prev, activityId],
+			);
 		} catch (error: any) {
 			console.error("Error joining activity:", error);
 			Alert.alert(
@@ -157,6 +154,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 						activity={item}
 						// --- NEW: Pass the computed state values down to the card ---
 						isJoined={rsvpedActivityIds.includes(item.id)}
+						isHostedByMe={item.host?.id === currentProfileId}
 						isJoining={joiningActivityId === item.id}
 						onPressJoin={() => handleJoin(item.id)}
 						onPressLocation={() => {

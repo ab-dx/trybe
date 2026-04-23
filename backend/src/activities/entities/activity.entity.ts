@@ -8,21 +8,12 @@ import {
 	OneToMany,
 } from "typeorm";
 import { User } from "../../users/entities/user.entity";
-import { Point } from "geojson";
-
-export class Rsvp {
-	activityId: string;
-	userId: string;
-	checkedIn: boolean;
-}
-
-export class Message {
-	activityId: string;
-	id: string;
-	content: string;
-	senderId: string;
-	createdAt: Date;
-}
+import { Rsvp } from "../../rsvp/entities/rsvp.entity";
+import { Message } from "../../chat/entities/message.entity";
+type Point = {
+	type: "Point";
+	coordinates: [number, number];
+};
 
 export enum ActivityStatus {
 	DRAFT = "DRAFT",
@@ -43,14 +34,14 @@ export class Activity {
 	@PrimaryGeneratedColumn("uuid")
 	id: string;
 
-	@Column("uuid")
+	@Column("uuid", { name: "hostId" })
 	hostId: string;
 
 	@ManyToOne(
 		() => User,
-		(user: User) => user.activities,
+		(user: User) => user.hostedActivities,
 	)
-	@JoinColumn({ name: "host_id" })
+	@JoinColumn({ name: "hostId" })
 	host: User;
 
 	@Column()
@@ -80,6 +71,9 @@ export class Activity {
 	@CreateDateColumn()
 	createdAt: Date;
 
+	@OneToMany(() => Rsvp, (rsvp) => rsvp.activity)
 	rsvps: Rsvp[];
+
+	@OneToMany(() => Message, (message) => message.activity)
 	messages: Message[];
 }

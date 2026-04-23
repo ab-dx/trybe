@@ -1,9 +1,12 @@
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  CreateDateColumn
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Activity } from '../../activities/entities/activity.entity';
+import { Rsvp } from '../../rsvp/entities/rsvp.entity';
 
 @Entity('users')
 export class User {
@@ -28,5 +31,9 @@ export class User {
   @CreateDateColumn()
   createdAt: Date;
 
-  activities: any[];
+  @OneToMany(() => Activity, (activity) => activity.host)
+  hostedActivities: Activity[];
+
+  @OneToMany(() => Rsvp, (rsvp) => rsvp.user)
+  rsvps: Rsvp[];
 }

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Rsvp } from './entities/rsvp.entity';
 import { Activity, ActivityStatus } from '../activities/entities/activity.entity';
 import { User } from '../users/entities/user.entity';
+import { isActivityPast } from '../activities/activity.utils';
 
 const CHECK_IN_THRESHOLD_METERS = 100;
 
@@ -21,6 +22,14 @@ export class RsvpService {
   async rsvp(activityId: string, userId: string): Promise<Rsvp> {
     const activity = await this.activityRepository.findOne({ where: { id: activityId } });
     if (!activity) throw new NotFoundException('Activity not found');
+
+    if (activity.hostId === userId) {
+      throw new BadRequestException('You cannot RSVP to your own activity');
+    }
+
+    if (isActivityPast(activity) || activity.status === ActivityStatus.CANCELLED) {
+      throw new BadRequestException('This activity is no longer accepting RSVPs');
+    }
 
     const existing = await this.rsvpRepository.findOne({
       where: { activityId, userId },

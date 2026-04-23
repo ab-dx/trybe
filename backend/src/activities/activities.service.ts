@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Activity, ActivityStatus, Visibility } from './entities/activity.entity';
 import { UsersService } from '../users/users.service';
+import { ENDED_ACTIVITY_STATUSES } from './activity.utils';
 
 export interface CreateActivityDto {
   title: string;
@@ -69,11 +75,16 @@ export class ActivitiesService {
     minLng: number,
     maxLng: number,
   ): Promise<Activity[]> {
+    const now = new Date();
+
     return this.activitiesRepository
       .createQueryBuilder('activity')
       .where('ST_Contains(ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326), activity.location::geometry)')
       .setParameters({ minLat, maxLat, minLng, maxLng })
-      .andWhere('activity.status != :status', { status: ActivityStatus.CANCELLED })
+      .andWhere('activity.status NOT IN (:...endedStatuses)', {
+        endedStatuses: ENDED_ACTIVITY_STATUSES,
+      })
+      .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC })
       .leftJoinAndSelect('activity.host', 'host')
       .orderBy('activity.startTime', 'ASC')
@@ -81,10 +92,14 @@ export class ActivitiesService {
   }
 
   async findUpcoming(userId?: string): Promise<Activity[]> {
+    const now = new Date();
+
     const query = this.activitiesRepository
       .createQueryBuilder('activity')
-      .where('activity.startTime > :now', { now: new Date() })
-      .andWhere('activity.status != :status', { status: ActivityStatus.CANCELLED })
+      .where('activity.status NOT IN (:...endedStatuses)', {
+        endedStatuses: ENDED_ACTIVITY_STATUSES,
+      })
+      .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .leftJoinAndSelect('activity.host', 'host')
       .orderBy('activity.startTime', 'ASC')
       .take(50);
@@ -97,9 +112,12 @@ export class ActivitiesService {
   }
 
   async findLive(): Promise<Activity[]> {
+    const now = new Date();
+
     return this.activitiesRepository
       .createQueryBuilder('activity')
       .where('activity.status = :status', { status: ActivityStatus.LIVE })
+      .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .leftJoinAndSelect('activity.host', 'host')
       .getMany();
   }
@@ -111,15 +129,30 @@ export class ActivitiesService {
       throw new UnauthorizedException('Not the host of this activity');
     }
 
-    // Safely apply standard fields
-    if (dto.title) activity.title = dto.title;
-    if (dto.description) activity.description = dto.description;
-    if (dto.startTime) activity.startTime = dto.startTime;
-    if (dto.endTime) activity.endTime = dto.endTime;
-    if (dto.visibility) activity.visibility = dto.visibility;
-    if (dto.status) activity.status = dto.status;
+    if (
+      dto.status !== undefined &&
+      !Object.values(ActivityStatus).includes(dto.status)
+    ) {
+      throw new BadRequestException('Invalid activity status');
+    }
 
-    // Handle coordinate updates by reconstructing the GeoJSON Point
+    if (dto.title !== undefined) activity.title = dto.title;
+    if (dto.description !== undefined) activity.description = dto.description;
+    if (dto.startTime !== undefined) activity.startTime = dto.startTime;
+    if (dto.endTime !== undefined) activity.endTime = dto.endTime;
+    if (dto.visibility !== undefined) activity.visibility = dto.visibility;
+
+    if (dto.status !== undefined) {
+      activity.status = dto.status;
+
+      if (
+        dto.status === ActivityStatus.COMPLETED &&
+        (!activity.endTime || new Date(activity.endTime) > new Date())
+      ) {
+        activity.endTime = new Date();
+      }
+    }
+
     if (dto.latitude !== undefined && dto.longitude !== undefined) {
       activity.location = {
         type: 'Point',
@@ -128,7 +161,19 @@ export class ActivitiesService {
     }
 
     return this.activitiesRepository.save(activity);
+  }
 
+  async endActivity(id: string, userId: string): Promise<Activity> {
+    const activity = await this.findById(id);
+
+    if (activity.hostId !== userId) {
+      throw new UnauthorizedException('Not the host of this activity');
+    }
+
+    activity.status = ActivityStatus.COMPLETED;
+    activity.endTime = new Date();
+
+    return this.activitiesRepository.save(activity);
   }
 
   async delete(id: string, userId: string): Promise<void> {
