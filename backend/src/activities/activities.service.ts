@@ -3,12 +3,15 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Activity, ActivityStatus, Visibility } from './entities/activity.entity';
 import { UsersService } from '../users/users.service';
 import { ENDED_ACTIVITY_STATUSES } from './activity.utils';
+import { FriendsService } from '../friends/friends.service';
 
 export interface CreateActivityDto {
   title: string;
@@ -37,6 +40,8 @@ export class ActivitiesService {
     @InjectRepository(Activity)
     private activitiesRepository: Repository<Activity>,
     private usersService: UsersService,
+    @Inject(forwardRef(() => FriendsService))
+    private friendsService: FriendsService,
   ) {}
 
   async create(dto: CreateActivityDto, hostId: string): Promise<Activity> {
@@ -74,10 +79,12 @@ export class ActivitiesService {
     maxLat: number,
     minLng: number,
     maxLng: number,
+    friendsOnly: boolean = false,
+    userId?: string,
   ): Promise<Activity[]> {
     const now = new Date();
 
-    return this.activitiesRepository
+    const query = this.activitiesRepository
       .createQueryBuilder('activity')
       .where('ST_Contains(ST_MakeEnvelope(:minLng, :minLat, :maxLng, :maxLat, 4326), activity.location::geometry)')
       .setParameters({ minLat, maxLat, minLng, maxLng })
@@ -85,13 +92,23 @@ export class ActivitiesService {
         endedStatuses: ENDED_ACTIVITY_STATUSES,
       })
       .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
-      .andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC })
       .leftJoinAndSelect('activity.host', 'host')
-      .orderBy('activity.startTime', 'ASC')
-      .getMany();
+      .orderBy('activity.startTime', 'ASC');
+
+    if (friendsOnly && userId) {
+      const friendIds = await this.friendsService.getFriendIdsList(userId);
+      if (friendIds.length === 0) {
+        return [];
+      }
+      query.andWhere('activity.hostId IN (:...friendIds)', { friendIds });
+    } else {
+      query.andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC });
+    }
+
+    return query.getMany();
   }
 
-  async findUpcoming(userId?: string): Promise<Activity[]> {
+  async findUpcoming(userId?: string, friendsOnly: boolean = false): Promise<Activity[]> {
     const now = new Date();
 
     const query = this.activitiesRepository
@@ -104,8 +121,16 @@ export class ActivitiesService {
       .orderBy('activity.startTime', 'ASC')
       .take(50);
 
-    if (userId) {
+    if (friendsOnly && userId) {
+      const friendIds = await this.friendsService.getFriendIdsList(userId);
+      if (friendIds.length === 0) {
+        return [];
+      }
+      query.andWhere('activity.hostId IN (:...friendIds)', { friendIds });
+    } else if (userId) {
       query.andWhere('activity.hostId = :userId', { userId });
+    } else {
+      query.andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC });
     }
 
     return query.getMany();

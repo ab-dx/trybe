@@ -5,9 +5,15 @@ import { ActivitiesService } from './activities.service';
 import { ActivitiesController } from './activities.controller';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
+import { FriendsModule } from '../friends/friends.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Activity]), UsersModule, forwardRef(() => AuthModule)],
+  imports: [
+    TypeOrmModule.forFeature([Activity]),
+    UsersModule,
+    forwardRef(() => AuthModule),
+    FriendsModule,
+  ],
   providers: [ActivitiesService],
   controllers: [ActivitiesController],
   exports: [ActivitiesService],

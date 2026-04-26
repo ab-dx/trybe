@@ -9,6 +9,7 @@ import {
   Query, 
   UseGuards, 
   Req,
+  Optional,
 } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
@@ -29,16 +30,23 @@ export class ActivitiesController {
     @Query('maxLat') maxLat?: string,
     @Query('minLng') minLng?: string,
     @Query('maxLng') maxLng?: string,
+    @Query('friendsOnly') friendsOnly?: string,
+    @Req() req?: AuthenticatedRequest,
   ) {
+    const friendsFilter = friendsOnly === 'true';
+    const userId = req?.user?.id;
+
     if (minLat && maxLat && minLng && maxLng) {
       return this.activitiesService.findInBounds(
         parseFloat(minLat),
         parseFloat(maxLat),
         parseFloat(minLng),
         parseFloat(maxLng),
+        friendsFilter,
+        userId,
       );
     }
-    return this.activitiesService.findUpcoming();
+    return this.activitiesService.findUpcoming(userId, friendsFilter);
   }
 
   @Get('live')
