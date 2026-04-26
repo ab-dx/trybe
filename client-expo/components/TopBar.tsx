@@ -43,9 +43,9 @@ export const TopBar: React.FC = () => {
 
 	return (
 		<View style={styles.container}>
-			<TouchableOpacity activeOpacity={0.7}>
-				<MaterialIcons name="help-outline" size={24} color="#38322C" />
-			</TouchableOpacity>
+			<View>
+				<Image source={require("../assets/logo.png")} style={styles.logo} />
+			</View>
 
 			<Text style={styles.title}>TRYBE</Text>
 
@@ -95,6 +95,11 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: "rgba(56, 50, 44, 0.1)",
 		zIndex: 1000,
+	},
+	logo: {
+		width: 32,
+		height: 32,
+		borderRadius: 8,
 	},
 	title: {
 		fontSize: 22,

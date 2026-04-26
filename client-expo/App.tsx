@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, StyleSheet, Modal, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Modal, TouchableOpacity, Image, ActivityIndicator, Text } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
@@ -79,7 +79,21 @@ const MainApp: React.FC = () => {
 	};
 
 	if (isLoading || !fontsLoaded) {
-		return null;
+		return (
+			<View style={styles.splashContainer}>
+				<Image
+					source={require("./assets/logo.png")}
+					style={styles.splashLogo}
+					resizeMode="contain"
+				/>
+				<Text style={styles.splashTitle}>TRYBE</Text>
+				<ActivityIndicator
+					size="small"
+					color="#38322C"
+					style={styles.splashLoader}
+				/>
+			</View>
+		);
 	}
 
 	return (
@@ -139,4 +153,26 @@ const styles = StyleSheet.create({
         zIndex: 10,
         padding: 8,
     },
+	splashContainer: {
+		flex: 1,
+		backgroundColor: "#ffffff",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	splashLogo: {
+		width: 120,
+		height: 120,
+		borderRadius: 24,
+	},
+	splashTitle: {
+		fontSize: 28,
+		fontWeight: "700",
+		color: "#38322C",
+		letterSpacing: 6,
+		marginTop: 24,
+	},
+	splashLoader: {
+		position: "absolute",
+		bottom: 80,
+	},
 });

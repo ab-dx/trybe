@@ -505,23 +505,23 @@ export const ProfileScreen: React.FC = () => {
 	const getPastBadge = (item: PastActivityItem) => {
 		if (item.source === "HOSTED") {
 			return {
-				backgroundColor: "#422006",
-				color: "#f59e0b",
+				backgroundColor: "rgba(199, 145, 82, 0.15)",
+				color: "#c79152",
 				label: "HOSTED",
 			};
 		}
 
 		if (item.checkedIn) {
 			return {
-				backgroundColor: "#064e3b",
-				color: "#10b981",
+				backgroundColor: "rgba(76, 44, 0, 0.1)",
+				color: "#4c2c00",
 				label: "CHECKED IN",
 			};
 		}
 
 		return {
-			backgroundColor: "#1e1b4b",
-			color: "#8b5cf6",
+			backgroundColor: "rgba(82, 97, 104, 0.1)",
+			color: "#526168",
 			label: "ENDED",
 		};
 	};
@@ -549,7 +549,7 @@ export const ProfileScreen: React.FC = () => {
 	if (!user) {
 		return (
 			<View style={styles.guestContainer}>
-				<MaterialIcons name="shield" size={80} color="#cfc5bc" />
+				<MaterialIcons name="shield" size={80} color="#38322C" />
 				<Text style={styles.guestTitle}>Join the Trybe</Text>
 				<Text style={styles.guestSubtitle}>
 					Sign up to track your trust score, host events, and connect with friends on campus.
