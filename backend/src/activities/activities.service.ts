@@ -96,6 +96,7 @@ export class ActivitiesService {
       })
       .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .leftJoinAndSelect('activity.host', 'host')
+      .loadRelationCountAndMap('activity.rsvpCount', 'activity.rsvps')
       .orderBy('activity.startTime', 'ASC');
 
     if (friendsOnly && userId) {
@@ -121,6 +122,7 @@ export class ActivitiesService {
       })
       .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .leftJoinAndSelect('activity.host', 'host')
+      .loadRelationCountAndMap('activity.rsvpCount', 'activity.rsvps')
       .orderBy('activity.startTime', 'ASC')
       .take(50);
 

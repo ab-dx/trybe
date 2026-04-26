@@ -21,6 +21,7 @@ export interface ActivityProps {
 	description?: string;
 	startTime: string;
 	status: string;
+	rsvpCount?: number;
 	location: {
 		type: string;
 		coordinates: [number, number]; // [longitude, latitude]
@@ -139,6 +140,9 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 
 			{/* Body: Title & Details */}
 			<Text style={styles.title}>{activity.title}</Text>
+			<Text style={styles.rsvpCount}>
+				{activity.rsvpCount || 0} RSVPs
+			</Text>
 
 			<TouchableOpacity
 				style={styles.locationContainer}
@@ -268,7 +272,13 @@ const styles = StyleSheet.create({
 		color: "#ffffff",
 		fontSize: 20,
 		fontWeight: "bold",
-		marginBottom: 6,
+		marginBottom: 2,
+	},
+	rsvpCount: {
+		color: "#64748b",
+		fontSize: 13,
+		fontWeight: "500",
+		marginBottom: 8,
 	},
 	locationContainer: {
 		flexDirection: "row",
