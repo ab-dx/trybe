@@ -33,7 +33,7 @@ interface ProfileSummary {
 }
 
 export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
-	const { user } = useAuth();
+	const { user, requireAuth } = useAuth();
 
 	const [activities, setActivities] = useState<ActivityProps[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -100,10 +100,17 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	useEffect(() => {
 		setLoading(true);
 		fetchFeed().then((activities) => {
-			fetchUserHypeStatuses(activities);
+			if (user && activities) {
+				fetchUserHypeStatuses(activities);
+			}
 		});
-		fetchUserRsvps();
-		fetchCurrentProfile();
+		if (user) {
+			fetchUserRsvps();
+			fetchCurrentProfile();
+		} else {
+			setRsvpedActivityIds([]);
+			setCurrentProfileId(null);
+		}
 	}, [user, friendsOnly]);
 
 	const onRefresh = () => {
@@ -117,10 +124,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 
 	const handleJoin = async (activityId: string) => {
 		if (!user) {
-			Alert.alert(
-				"Not logged in",
-				"You must be logged in to join an activity.",
-			);
+			requireAuth();
 			return;
 		}
 
@@ -146,10 +150,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 
 	const handleHype = async (activityId: string) => {
 		if (!user) {
-			Alert.alert(
-				"Not logged in",
-				"You must be logged in to hype an activity.",
-			);
+			requireAuth();
 			return;
 		}
 

@@ -8,6 +8,9 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   error: AuthError | null;
+  showAuthModal: boolean;          
+  requireAuth: () => void;         
+  closeAuthModal: () => void;      
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -27,10 +30,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<AuthError | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
+      if (firebaseUser) {
+        setShowAuthModal(false);
+      }
 //       if (firebaseUser) {
 //         const userData = {
 //           uid: firebaseUser.uid,
@@ -46,6 +53,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
+
+  const requireAuth = () => setShowAuthModal(true);
+  const closeAuthModal = () => setShowAuthModal(false);
 
   const login = async (email: string, password: string) => {
     try {
@@ -111,6 +121,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         user,
         isLoading,
         error,
+        showAuthModal,     
+        requireAuth,       
+        closeAuthModal,    
         login,
         signup,
         logout,

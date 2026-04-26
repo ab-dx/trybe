@@ -17,7 +17,7 @@ import MapView, { Marker, UrlTile } from "react-native-maps";
 import { useAuth } from "../lib/auth/AuthContext";
 
 export default function CreateActivity() {
-	const { user } = useAuth();
+	const { user, requireAuth } = useAuth();
 
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
@@ -104,6 +104,23 @@ export default function CreateActivity() {
 			setIsSubmitting(false);
 		}
 	};
+
+	if (!user) {
+        return (
+            <View style={styles.guestContainer}>
+                <View style={styles.guestIconWrapper}>
+                    <Text style={{ fontSize: 40 }}>🔥</Text>
+                </View>
+                <Text style={styles.guestTitle}>Host an Activity</Text>
+                <Text style={styles.guestSubtitle}>
+                    Got an idea for a run, a study session, or a jam? Log in to put your activity on the map.
+                </Text>
+                <TouchableOpacity style={styles.guestButton} onPress={requireAuth}>
+                    <Text style={styles.guestButtonText}>Log In to Host</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -322,4 +339,54 @@ const styles = StyleSheet.create({
 	},
 	submitButtonDisabled: { opacity: 0.6 },
 	submitButtonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 18 },
+	guestContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#080e1f',
+        padding: 32,
+    },
+    guestTitle: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginTop: 24,
+    },
+    guestSubtitle: {
+        color: '#94a3b8',
+        fontSize: 15,
+        textAlign: 'center',
+        marginTop: 12,
+        marginBottom: 32,
+        lineHeight: 22,
+    },
+    guestButton: {
+        backgroundColor: '#3396ff',
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        borderRadius: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    guestButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+	guestIconWrapper: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        backgroundColor: '#1e293b', // A subtle slate background
+        borderWidth: 2,
+        borderColor: '#334155',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
+    },
 });

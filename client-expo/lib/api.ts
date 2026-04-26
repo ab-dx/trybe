@@ -2,18 +2,23 @@ import { auth } from './firebase';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-async function authFetch(path: string, options: RequestInit = {}) {
+async function authFetch(path: string, options: RequestInit = {}, isOptional=false) {
   const user = auth.currentUser;
-  if (!user) throw new Error('Not authenticated');
+  if (!user && !isOptional) throw new Error('Not authenticated');
 
-  const token = await user.getIdToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as any || {}),
+  };
+
+  if (user) {
+    const token = await user.getIdToken();
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...(options.headers || {}),
-    },
+    headers,
   });
 
   if (!res.ok) {
@@ -101,7 +106,7 @@ export function unhypeActivity(activityId: string) {
 }
 
 export async function fetchHypeStatus(activityId: string) {
-  return authFetch(`/activities/${activityId}/hype`);
+  return authFetch(`/activities/${activityId}/hype`, {}, true);
 }
 
 export async function fetchHypeStatuses(activityIds: string[]) {
@@ -159,9 +164,13 @@ export async function fetchActivities(
   friendsOnly: boolean = false,
 ) {
   const user = auth.currentUser;
-  if (!user) throw new Error('Not authenticated');
-
-  const token = await user.getIdToken();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (user) {
+      const token = await user.getIdToken();
+      headers['Authorization'] = `Bearer ${token}`;
+  }
 
   let url = `${API_URL}/activities`;
   const params = new URLSearchParams();
@@ -182,10 +191,7 @@ export async function fetchActivities(
   }
 
   const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   if (!res.ok) {

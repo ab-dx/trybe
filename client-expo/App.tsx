@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Modal, TouchableOpacity } from "react-native";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
+import { Ionicons } from "@expo/vector-icons";
 
 import { AuthProvider, useAuth } from "lib/auth/AuthContext";
 import { LoginScreen } from "components/LoginScreen";
@@ -18,7 +19,7 @@ type TabName = "Feed" | "Map" | "Activity" | "Profile";
 type AuthScreen = "login" | "signup";
 
 const MainApp: React.FC = () => {
-	const { user, isLoading } = useAuth();
+	const { user, isLoading, showAuthModal, closeAuthModal } = useAuth();
 	const [activeTab, setActiveTab] = useState<TabName>("Feed");
 	const [authScreen, setAuthScreen] = useState<AuthScreen>("login");
 
@@ -59,20 +60,32 @@ const MainApp: React.FC = () => {
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.container} edges={["top"]}>
-				{!user ? (
-					authScreen === "login" ? (
-						<LoginScreen onNavigateToSignup={() => setAuthScreen("signup")} />
-					) : (
-						<SignupScreen onNavigateToLogin={() => setAuthScreen("login")} />
-					)
-				) : (
-					<View style={styles.mainContent}>
-						<TopBar />
-						<View style={styles.screenContainer}>{renderScreen()}</View>
-						<StatusBar activeTab={activeTab} onTabPress={setActiveTab} />
-					</View>
-				)}
-				<ExpoStatusBar style={user ? "light" : "auto"} />
+                <View style={styles.mainContent}>
+                    <TopBar />
+                    <View style={styles.screenContainer}>{renderScreen()}</View>
+                    <StatusBar activeTab={activeTab} onTabPress={setActiveTab} />
+                </View>
+
+                <ExpoStatusBar style="light" />
+
+                <Modal 
+                    visible={showAuthModal} 
+                    animationType="slide" 
+                    presentationStyle="pageSheet"
+                    onRequestClose={closeAuthModal}
+                >
+                    <View style={styles.modalContainer}>
+                        <TouchableOpacity style={styles.closeButton} onPress={closeAuthModal}>
+                            <Ionicons name="close" size={28} color="#94a3b8" />
+                        </TouchableOpacity>
+
+                        {authScreen === "login" ? (
+                            <LoginScreen onNavigateToSignup={() => setAuthScreen("signup")} />
+                        ) : (
+                            <SignupScreen onNavigateToLogin={() => setAuthScreen("login")} />
+                        )}
+                    </View>
+                </Modal>
 			</SafeAreaView>
 		</SafeAreaProvider>
 	);
@@ -87,14 +100,18 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#080e1f",
-	},
-	mainContent: {
-		flex: 1,
-	},
-	screenContainer: {
-		flex: 1,
-	},
+	container: { flex: 1, backgroundColor: "#080e1f" },
+    mainContent: { flex: 1 },
+    screenContainer: { flex: 1 },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: "#080e1f", // Match your app's dark theme
+    },
+    closeButton: {
+        position: "absolute",
+        top: 20,
+        right: 20,
+        zIndex: 10,
+        padding: 8,
+    },
 });

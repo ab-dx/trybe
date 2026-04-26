@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { AuthGuard } from '../auth/guards/auth.guard';
+import { OptionalAuthGuard } from '../auth/guards/optional-auth.guard';
 import { Request } from 'express';
 import { ActivityStatus, Visibility } from './entities/activity.entity';
 
@@ -20,22 +21,26 @@ interface AuthenticatedRequest extends Request {
   user: { id: string };
 }
 
+interface OptionalAuthRequest extends Request {
+  user?: { id: string }; 
+}
+
 @Controller('activities')
 export class ActivitiesController {
   constructor(private readonly activitiesService: ActivitiesService) {}
 
   @Get()
-  @UseGuards(AuthGuard)
+  @UseGuards(OptionalAuthGuard)
   async getActivities(
     @Query('minLat') minLat: string,
     @Query('maxLat') maxLat: string,
     @Query('minLng') minLng: string,
     @Query('maxLng') maxLng: string,
     @Query('friendsOnly') friendsOnly: string,
-    @Req() req: AuthenticatedRequest,
+    @Req() req: OptionalAuthRequest,
   ) {
-    const friendsFilter = friendsOnly === 'true';
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    const friendsFilter = userId ? friendsOnly === 'true' : false;
 
     if (minLat && maxLat && minLng && maxLng) {
       return this.activitiesService.findInBounds(

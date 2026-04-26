@@ -139,7 +139,7 @@ const buildPastActivities = (
 };
 
 export const ProfileScreen: React.FC = () => {
-	const { user, logout } = useAuth();
+	const { user, logout, requireAuth } = useAuth();
 	const [profile, setProfile] = useState<ProfileData | null>(null);
 	const [activeHostedActivities, setActiveHostedActivities] = useState<
 		ActivityItem[]
@@ -218,8 +218,12 @@ export const ProfileScreen: React.FC = () => {
 	}, []);
 
 	useEffect(() => {
+		if (user) {
 		loadProfileData();
-	}, [loadProfileData]);
+		} else {
+		setLoading(false); 
+		}
+	}, [user, loadProfileData]);
 
 	const onRefresh = () => {
 		setRefreshing(true);
@@ -520,6 +524,21 @@ export const ProfileScreen: React.FC = () => {
 			label: "ENDED",
 		};
 	};
+
+	if (!user) {
+        return (
+            <View style={styles.guestContainer}>
+                <Ionicons name="shield-checkmark-outline" size={80} color="#334155" />
+                <Text style={styles.guestTitle}>Join the Trybe</Text>
+                <Text style={styles.guestSubtitle}>
+                    Sign up to track your trust score, host events, and connect with friends on campus.
+                </Text>
+                <TouchableOpacity style={styles.guestButton} onPress={requireAuth}>
+                    <Text style={styles.guestButtonText}>Log In / Sign Up</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
 	if (loading) {
 		return (
@@ -1445,4 +1464,38 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		padding: 20,
 	},
+	guestContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#080e1f',
+        padding: 32,
+    },
+    guestTitle: {
+        color: '#fff',
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginTop: 24,
+    },
+    guestSubtitle: {
+        color: '#94a3b8',
+        fontSize: 15,
+        textAlign: 'center',
+        marginTop: 12,
+        marginBottom: 32,
+        lineHeight: 22,
+    },
+    guestButton: {
+        backgroundColor: '#3396ff',
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        borderRadius: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    guestButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
 });
