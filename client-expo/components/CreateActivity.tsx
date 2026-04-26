@@ -107,21 +107,22 @@ export default function CreateActivity() {
 	};
 
 	if (!user) {
-        return (
-            <View style={styles.guestContainer}>
-                <View style={styles.guestIconWrapper}>
-                    <MaterialIcons name="explore" size={36} color="#38322C" />
-                </View>
-                <Text style={styles.guestTitle}>Host an Activity</Text>
-                <Text style={styles.guestSubtitle}>
-                    Got an idea for a run, a study session, or a jam? Log in to put your activity on the map.
-                </Text>
-                <TouchableOpacity style={styles.guestButton} onPress={requireAuth}>
-                    <Text style={styles.guestButtonText}>Log In to Host</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
+		return (
+			<View style={styles.guestContainer}>
+				<View style={styles.guestIconWrapper}>
+					<MaterialIcons name="explore" size={36} color="#38322C" />
+				</View>
+				<Text style={styles.guestTitle}>Host an Activity</Text>
+				<Text style={styles.guestSubtitle}>
+					Got an idea for a run, a study session, or a jam? Log in to put your
+					activity on the map.
+				</Text>
+				<TouchableOpacity style={styles.guestButton} onPress={requireAuth}>
+					<Text style={styles.guestButtonText}>Log In to Host</Text>
+				</TouchableOpacity>
+			</View>
+		);
+	}
 
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -249,10 +250,6 @@ export default function CreateActivity() {
 						<Text style={styles.submitButtonText}>Create Activity</Text>
 					)}
 				</TouchableOpacity>
-
-				<TouchableOpacity style={styles.draftButton}>
-					<Text style={styles.draftButtonText}>Save as Draft</Text>
-				</TouchableOpacity>
 			</View>
 		</ScrollView>
 	);
@@ -339,8 +336,17 @@ const styles = StyleSheet.create({
 		fontFamily: "Inter_500Medium",
 		letterSpacing: 0.5,
 	},
-	mapPlaceholder: { height: 200, justifyContent: "center", alignItems: "center", gap: 12 },
-	mapHintPlaceholder: { color: "#526168", fontSize: 14, fontFamily: "Inter_400Regular" },
+	mapPlaceholder: {
+		height: 200,
+		justifyContent: "center",
+		alignItems: "center",
+		gap: 12,
+	},
+	mapHintPlaceholder: {
+		color: "#526168",
+		fontSize: 14,
+		fontFamily: "Inter_400Regular",
+	},
 
 	// Action Buttons
 	actionContainer: { marginTop: 24, gap: 12 },
@@ -381,57 +387,57 @@ const styles = StyleSheet.create({
 
 	// Guest Styles
 	guestContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#D8CFC0',
-        padding: 32,
-    },
-    guestTitle: {
-        color: '#221d18',
-        fontSize: 24,
-        fontWeight: '600',
-        marginTop: 24,
-        fontFamily: 'PlusJakartaSans_600SemiBold',
-    },
-    guestSubtitle: {
-        color: '#4c463f',
-        fontSize: 16,
-        textAlign: 'center',
-        marginTop: 12,
-        marginBottom: 32,
-        lineHeight: 24,
-        fontFamily: 'Inter_400Regular',
-    },
-    guestButton: {
-        backgroundColor: '#221d18',
-        paddingHorizontal: 32,
-        paddingVertical: 16,
-        borderRadius: 12,
-        width: '100%',
-        alignItems: 'center',
-    },
-    guestButtonText: {
-        color: '#D8CFC0',
-        fontSize: 14,
-        fontWeight: '600',
-        fontFamily: 'Inter_600SemiBold',
-        letterSpacing: 0.3,
-    },
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		backgroundColor: "#D8CFC0",
+		padding: 32,
+	},
+	guestTitle: {
+		color: "#221d18",
+		fontSize: 24,
+		fontWeight: "600",
+		marginTop: 24,
+		fontFamily: "PlusJakartaSans_600SemiBold",
+	},
+	guestSubtitle: {
+		color: "#4c463f",
+		fontSize: 16,
+		textAlign: "center",
+		marginTop: 12,
+		marginBottom: 32,
+		lineHeight: 24,
+		fontFamily: "Inter_400Regular",
+	},
+	guestButton: {
+		backgroundColor: "#221d18",
+		paddingHorizontal: 32,
+		paddingVertical: 16,
+		borderRadius: 12,
+		width: "100%",
+		alignItems: "center",
+	},
+	guestButtonText: {
+		color: "#D8CFC0",
+		fontSize: 14,
+		fontWeight: "600",
+		fontFamily: "Inter_600SemiBold",
+		letterSpacing: 0.3,
+	},
 	guestIconWrapper: {
-        width: 88,
-        height: 88,
-        borderRadius: 44,
-        backgroundColor: '#E2DACF',
-        borderWidth: 2,
-        borderColor: 'rgba(56, 50, 44, 0.1)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-        shadowColor: 'rgba(56, 50, 44, 0.08)',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 1,
-        shadowRadius: 16,
-        elevation: 5,
-    },
+		width: 88,
+		height: 88,
+		borderRadius: 44,
+		backgroundColor: "#E2DACF",
+		borderWidth: 2,
+		borderColor: "rgba(56, 50, 44, 0.1)",
+		justifyContent: "center",
+		alignItems: "center",
+		marginBottom: 16,
+		shadowColor: "rgba(56, 50, 44, 0.08)",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 1,
+		shadowRadius: 16,
+		elevation: 5,
+	},
 });
