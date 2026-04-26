@@ -16,6 +16,60 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - trybe-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    expose:
+      - "3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: trybe
+      DB_PASSWORD: trybe_dev
+      DB_NAME: trybe
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trybe-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    # depends_on:
+    #   backend:
+    #     condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - trybe-network
 
 volumes:
   pgdata:
+
+networks:
+  trybe-network:
+    driver: bridge
