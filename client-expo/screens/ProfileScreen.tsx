@@ -764,7 +764,7 @@ export const ProfileScreen: React.FC = () => {
 									)}
 									<View style={styles.friendInfo}>
 										<Text style={styles.friendName}>
-											{friend.displayName || friend.email || "Unknown"}
+											{friend.displayName || friend.email?.split('@')[0] || "Unknown"}
 										</Text>
 										<Text style={styles.friendTrust}>Trust: {friend.trustScore}</Text>
 									</View>

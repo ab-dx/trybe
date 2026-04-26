@@ -25,16 +25,17 @@ export class ActivitiesController {
   constructor(private readonly activitiesService: ActivitiesService) {}
 
   @Get()
+  @UseGuards(AuthGuard)
   async getActivities(
-    @Query('minLat') minLat?: string,
-    @Query('maxLat') maxLat?: string,
-    @Query('minLng') minLng?: string,
-    @Query('maxLng') maxLng?: string,
-    @Query('friendsOnly') friendsOnly?: string,
-    @Req() req?: AuthenticatedRequest,
+    @Query('minLat') minLat: string,
+    @Query('maxLat') maxLat: string,
+    @Query('minLng') minLng: string,
+    @Query('maxLng') maxLng: string,
+    @Query('friendsOnly') friendsOnly: string,
+    @Req() req: AuthenticatedRequest,
   ) {
     const friendsFilter = friendsOnly === 'true';
-    const userId = req?.user?.id;
+    const userId = req.user.id;
 
     if (minLat && maxLat && minLng && maxLng) {
       return this.activitiesService.findInBounds(

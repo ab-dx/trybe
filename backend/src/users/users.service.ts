@@ -20,7 +20,7 @@ export class UsersService implements OnModuleInit {
     if (!user) {
       const newUser = new User();
       newUser.firebaseUid = firebaseUid;
-      newUser.displayName = profile?.displayName || '';
+      newUser.displayName = profile?.displayName || profile?.email?.split('@')[0] || '';
       newUser.email = profile?.email || '';
       newUser.avatarUrl = profile?.avatarUrl || '';
       newUser.trustScore = 100;

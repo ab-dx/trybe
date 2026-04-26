@@ -127,8 +127,6 @@ export class ActivitiesService {
         return [];
       }
       query.andWhere('activity.hostId IN (:...friendIds)', { friendIds });
-    } else if (userId) {
-      query.andWhere('activity.hostId = :userId', { userId });
     } else {
       query.andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC });
     }
