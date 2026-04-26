@@ -17,6 +17,8 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "../lib/auth/AuthContext";
 import {
 	endHostedActivity,
+	cancelHostedActivity,
+	makeActivityLive,
 	fetchMyHosted,
 	fetchMyRsvps,
 	fetchProfile,
@@ -28,7 +30,10 @@ import {
 	acceptFriendRequest,
 	rejectFriendRequest,
 	removeFriend,
+	leaveRsvp,
+	checkInToActivity,
 } from "../lib/api";
+import * as Location from "expo-location";
 
 interface UserItem {
 	id: string;
@@ -145,6 +150,7 @@ export const ProfileScreen: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [endingActivityId, setEndingActivityId] = useState<string | null>(null);
+	const [checkingInId, setCheckingInId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const [friends, setFriends] = useState<UserItem[]>([]);
@@ -242,6 +248,52 @@ export const ProfileScreen: React.FC = () => {
 		}
 	};
 
+	const runCancelActivity = async (activityId: string) => {
+		try {
+			setEndingActivityId(activityId);
+			await cancelHostedActivity(activityId);
+			await loadProfileData();
+		} catch (err: any) {
+			console.error("Cancel activity error:", err);
+			Alert.alert(
+				"Could not cancel activity",
+				err?.message || "Please try again in a moment.",
+			);
+		} finally {
+			setEndingActivityId(null);
+		}
+	};
+
+	const runMakeLive = async (activityId: string) => {
+		try {
+			setEndingActivityId(activityId);
+			await makeActivityLive(activityId);
+			await loadProfileData();
+			Alert.alert("Success!", "Activity is now live. Attendees can check in.");
+		} catch (err: any) {
+			console.error("Go live error:", err);
+			Alert.alert(
+				"Could not go live",
+				err?.message || "Please try again in a moment.",
+			);
+		} finally {
+			setEndingActivityId(null);
+		}
+	};
+
+	const runLeaveRsvp = async (activityId: string) => {
+		try {
+			await leaveRsvp(activityId);
+			await loadProfileData();
+		} catch (err: any) {
+			console.error("Leave RSVP error:", err);
+			Alert.alert(
+				"Could not leave activity",
+				err?.message || "Please try again in a moment.",
+			);
+		}
+	};
+
 	const handleEndActivity = (activityId: string) => {
 		Alert.alert(
 			"End this activity?",
@@ -257,6 +309,85 @@ export const ProfileScreen: React.FC = () => {
 				},
 			],
 		);
+	};
+
+	const handleCancelActivity = (activityId: string) => {
+		Alert.alert(
+			"Cancel this activity?",
+			"This will cancel the activity and reduce your trust score.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Cancel Activity",
+					style: "destructive",
+					onPress: () => {
+						void runCancelActivity(activityId);
+					},
+				},
+			],
+		);
+	};
+
+	const handleMakeLive = (activityId: string) => {
+		Alert.alert(
+			"Go Live?",
+			"This will make the activity live. Attendees will then be able to check in.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Go Live",
+					onPress: () => {
+						void runMakeLive(activityId);
+					},
+				},
+			],
+		);
+	};
+
+	const handleLeaveRsvp = (activityId: string) => {
+		Alert.alert(
+			"Leave this activity?",
+			"Leaving within 2 hours of start time may reduce your trust.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Leave",
+					style: "destructive",
+					onPress: () => {
+						void runLeaveRsvp(activityId);
+					},
+				},
+			],
+		);
+	};
+
+	const handleCheckIn = async (activityId: string) => {
+		try {
+			const { status } = await Location.requestForegroundPermissionsAsync();
+			if (status !== 'granted') {
+				Alert.alert(
+					"Location Required",
+					"Check-in requires location access to verify you're at the activity.",
+				);
+				return;
+			}
+
+			const location = await Location.getCurrentPositionAsync({
+				accuracy: Location.Accuracy.High,
+			});
+
+			setCheckingInId(activityId);
+			await checkInToActivity(activityId, location.coords.latitude, location.coords.longitude);
+			await loadProfileData();
+		} catch (err: any) {
+			console.error("Check-in error:", err);
+			Alert.alert(
+				"Check-in Failed",
+				err?.message || "Could not check in. Make sure you're near the activity.",
+			);
+		} finally {
+			setCheckingInId(null);
+		}
 	};
 
 	const handleSearchUsers = async (query: string) => {
@@ -515,7 +646,7 @@ export const ProfileScreen: React.FC = () => {
 						<View
 							style={[
 								styles.activityIndicator,
-								{ backgroundColor: "#f59e0b" },
+								{ backgroundColor: activity.status === 'LIVE' ? '#10b981' : '#f59e0b' },
 							]}
 						/>
 						<View style={styles.activityInfo}>
@@ -537,17 +668,40 @@ export const ProfileScreen: React.FC = () => {
 							>
 								<Text style={styles.statusText}>{activity.status}</Text>
 							</View>
-							<TouchableOpacity
-								style={styles.endButton}
-								onPress={() => handleEndActivity(activity.id)}
-								disabled={endingActivityId === activity.id}
-							>
-								{endingActivityId === activity.id ? (
-									<ActivityIndicator size="small" color="#ffffff" />
-								) : (
-									<Text style={styles.endButtonText}>End</Text>
-								)}
-							</TouchableOpacity>
+							{activity.status === 'UPCOMING' ? (
+								<TouchableOpacity
+									style={styles.goLiveButton}
+									onPress={() => handleMakeLive(activity.id)}
+									disabled={endingActivityId === activity.id}
+								>
+									{endingActivityId === activity.id ? (
+										<ActivityIndicator size="small" color="#ffffff" />
+									) : (
+										<Text style={styles.goLiveButtonText}>Go Live</Text>
+									)}
+								</TouchableOpacity>
+							) : activity.status === 'LIVE' ? (
+								<>
+									<TouchableOpacity
+										style={styles.endButton}
+										onPress={() => handleEndActivity(activity.id)}
+										disabled={endingActivityId === activity.id}
+									>
+										{endingActivityId === activity.id ? (
+											<ActivityIndicator size="small" color="#ffffff" />
+										) : (
+											<Text style={styles.endButtonText}>End</Text>
+										)}
+									</TouchableOpacity>
+									<TouchableOpacity
+										style={styles.cancelButton}
+										onPress={() => handleCancelActivity(activity.id)}
+										disabled={endingActivityId === activity.id}
+									>
+										<Text style={styles.cancelButtonText}>Cancel</Text>
+									</TouchableOpacity>
+								</>
+							) : null}
 						</View>
 					</View>
 				))
@@ -582,8 +736,30 @@ export const ProfileScreen: React.FC = () => {
 								</Text>
 							</View>
 						</View>
-						<View style={[styles.statusBadge, styles.statusUpcoming]}>
-							<Text style={styles.statusText}>{rsvp.activity.status}</Text>
+						<View style={styles.activityActions}>
+							{rsvp.checkedIn ? (
+								<View style={styles.checkedInButton}>
+									<Text style={styles.checkedInButtonText}>Checked In ✓</Text>
+								</View>
+							) : (
+								<TouchableOpacity
+									style={styles.checkInButton}
+									onPress={() => handleCheckIn(rsvp.activityId)}
+									disabled={checkingInId === rsvp.activityId}
+								>
+									{checkingInId === rsvp.activityId ? (
+										<ActivityIndicator size="small" color="#ffffff" />
+									) : (
+										<Text style={styles.checkInButtonText}>Check In</Text>
+									)}
+								</TouchableOpacity>
+							)}
+							<TouchableOpacity
+								style={styles.leaveButton}
+								onPress={() => handleLeaveRsvp(rsvp.activityId)}
+							>
+								<Text style={styles.leaveButtonText}>Leave</Text>
+							</TouchableOpacity>
 						</View>
 					</View>
 				))
@@ -1047,6 +1223,41 @@ const styles = StyleSheet.create({
 		backgroundColor: "#7f1d1d",
 	},
 	endButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+	cancelButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+		backgroundColor: "#7f1d1d",
+	},
+	cancelButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+	goLiveButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+		backgroundColor: "#10b981",
+	},
+	goLiveButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+	leaveButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderRadius: 8,
+		backgroundColor: "#7f1d1d",
+	},
+	leaveButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+	checkInButton: {
+		paddingHorizontal: 10,
+		paddingVertical: 8,
+		borderRadius: 8,
+		backgroundColor: "#10b981",
+	},
+	checkInButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
+	checkedInButton: {
+		paddingHorizontal: 10,
+		paddingVertical: 8,
+		borderRadius: 8,
+		backgroundColor: "#475569",
+	},
+	checkedInButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
 	emptyState: {
 		alignItems: "center",
 		paddingVertical: 28,

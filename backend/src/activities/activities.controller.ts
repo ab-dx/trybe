@@ -116,6 +116,24 @@ export class ActivitiesController {
     return this.activitiesService.endActivity(id, req.user.id);
   }
 
+  @Post(':id/cancel')
+  @UseGuards(AuthGuard)
+  async cancelActivity(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.activitiesService.cancelWithPenalty(id, req.user.id);
+  }
+
+  @Post(':id/live')
+  @UseGuards(AuthGuard)
+  async makeLive(
+    @Param('id') id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.activitiesService.makeLive(id, req.user.id);
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard)
   async deleteActivity(

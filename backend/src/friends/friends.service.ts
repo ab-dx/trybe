@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { FriendRequest, FriendRequestStatus } from './entities/friend-request.entity';
 import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class FriendsService {
@@ -16,6 +17,7 @@ export class FriendsService {
     private friendRequestRepository: Repository<FriendRequest>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private usersService: UsersService,
   ) {}
 
   async search(query: string, currentUserId: string): Promise<User[]> {
@@ -157,7 +159,12 @@ export class FriendsService {
     }
 
     request.status = FriendRequestStatus.ACCEPTED;
-    return this.friendRequestRepository.save(request);
+    const saved = await this.friendRequestRepository.save(request);
+
+    await this.usersService.modifyTrustScore(request.requesterId, 5);
+    await this.usersService.modifyTrustScore(request.receiverId, 5);
+
+    return saved;
   }
 
   async rejectRequest(requestId: string, userId: string): Promise<FriendRequest> {
@@ -194,6 +201,7 @@ export class FriendsService {
     }
 
     await this.friendRequestRepository.remove(request);
+    await this.usersService.modifyTrustScore(friendId, -10);
   }
 
   async getFriends(userId: string): Promise<User[]> {

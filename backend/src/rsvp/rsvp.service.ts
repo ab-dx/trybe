@@ -4,9 +4,12 @@ import { Repository } from 'typeorm';
 import { Rsvp } from './entities/rsvp.entity';
 import { Activity, ActivityStatus } from '../activities/entities/activity.entity';
 import { User } from '../users/entities/user.entity';
+import { UsersService } from '../users/users.service';
 import { isActivityPast } from '../activities/activity.utils';
 
 const CHECK_IN_THRESHOLD_METERS = 100;
+const TRUST_PENALTY_LEAVE = -5;
+const HOURS_BEFORE_PENALTY = 2;
 
 @Injectable()
 export class RsvpService {
@@ -17,6 +20,7 @@ export class RsvpService {
     private activityRepository: Repository<Activity>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private usersService: UsersService,
   ) {}
 
   async rsvp(activityId: string, userId: string): Promise<Rsvp> {
@@ -27,7 +31,10 @@ export class RsvpService {
       throw new BadRequestException('You cannot RSVP to your own activity');
     }
 
-    if (isActivityPast(activity) || activity.status === ActivityStatus.CANCELLED) {
+    if (
+      activity.status !== ActivityStatus.UPCOMING &&
+      activity.status !== ActivityStatus.LIVE
+    ) {
       throw new BadRequestException('This activity is no longer accepting RSVPs');
     }
 
@@ -49,10 +56,25 @@ export class RsvpService {
   }
 
   async cancelRsvp(activityId: string, userId: string): Promise<void> {
-    const result = await this.rsvpRepository.delete({ activityId, userId });
-    if (result.affected === 0) {
+    const rsvp = await this.rsvpRepository.findOne({
+      where: { activityId, userId },
+      relations: ['activity'],
+    });
+
+    if (!rsvp) {
       throw new NotFoundException('RSVP not found');
     }
+
+    const activity = rsvp.activity;
+    const activityStart = new Date(activity.startTime);
+    const now = new Date();
+    const hoursUntilStart = (activityStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursUntilStart > 0 && hoursUntilStart <= HOURS_BEFORE_PENALTY) {
+      await this.usersService.modifyTrustScore(userId, TRUST_PENALTY_LEAVE);
+    }
+
+    await this.rsvpRepository.delete({ activityId, userId });
   }
 
   async getRsvpsForActivity(activityId: string): Promise<Rsvp[]> {
@@ -118,7 +140,6 @@ export class RsvpService {
 
     if (result) {
       await this.rsvpRepository.update({ activityId, userId }, { checkedIn: true });
-      await this.userRepository.increment({ id: userId }, 'trustScore', 5);
       return { success: true, distance: 0 };
     }
 

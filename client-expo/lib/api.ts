@@ -48,6 +48,46 @@ export function endHostedActivity(activityId: string) {
   });
 }
 
+export function cancelHostedActivity(activityId: string) {
+  return authFetch(`/activities/${activityId}/cancel`, {
+    method: 'POST',
+  });
+}
+
+export function makeActivityLive(activityId: string) {
+  return authFetch(`/activities/${activityId}/live`, {
+    method: 'POST',
+  });
+}
+
+export function leaveRsvp(activityId: string) {
+  return authFetch(`/activities/${activityId}/rsvp`, {
+    method: 'DELETE',
+  });
+}
+
+export async function checkInToActivity(activityId: string, latitude: number, longitude: number) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const token = await user.getIdToken();
+  const res = await fetch(`${API_URL}/activities/${activityId}/rsvp/checkin`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ latitude, longitude }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API ${res.status}: ${body}`);
+  }
+
+  return res.json();
+}
+
 export function searchUsers(query: string) {
   return authFetch(`/friends/search?q=${encodeURIComponent(query)}`);
 }

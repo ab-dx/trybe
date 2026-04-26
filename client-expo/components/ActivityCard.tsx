@@ -8,6 +8,13 @@ import {
 } from "react-native";
 import * as Location from "expo-location";
 
+function getTrustBadge(score: number): { emoji: string; label: string } {
+	if (score >= 76) return { emoji: "⭐", label: "Veteran" };
+	if (score >= 51) return { emoji: "🟢", label: "Trusted" };
+	if (score >= 26) return { emoji: "🟡", label: "Regular" };
+	return { emoji: "🔴", label: "New" };
+}
+
 export interface ActivityProps {
 	id: string;
 	title: string;
@@ -23,6 +30,10 @@ export interface ActivityProps {
 		email?: string;
 		displayName?: string;
 		trustScore?: number;
+		trustBadge?: {
+			emoji: string;
+			label: string;
+		};
 	};
 }
 
@@ -94,7 +105,11 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 	});
 
 	const hostDisplayName =
-		activity.host?.displayName || activity.host?.email?.split('@')[0] || "Unknown Host";
+		activity.host?.displayName ||
+		activity.host?.email?.split("@")[0] ||
+		"Unknown Host";
+	const hostScore = activity.host?.trustScore ?? 100;
+	const trustBadge = getTrustBadge(hostScore);
 	const joinButtonDisabled = isHostedByMe || isJoined || isJoining;
 	const joinButtonLabel = isHostedByMe
 		? "Hosting"
@@ -116,11 +131,8 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 				</View>
 
 				<View style={styles.trustBadge}>
-					<Text style={styles.trustText}>
-						Trust:{" "}
-						{activity.host?.trustScore !== undefined
-							? activity.host.trustScore
-							: 100}
+					<Text style={styles.trustBadgeText}>
+						{trustBadge.emoji} {trustBadge.label} {hostScore}
 					</Text>
 				</View>
 			</View>
@@ -245,6 +257,12 @@ const styles = StyleSheet.create({
 		color: "#34d399",
 		fontSize: 12,
 		fontWeight: "bold",
+	},
+	trustBadgeText: {
+		color: "#34d399",
+		fontSize: 11,
+		fontWeight: "600",
+		marginLeft: 2,
 	},
 	title: {
 		color: "#ffffff",

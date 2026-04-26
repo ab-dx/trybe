@@ -9,6 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Activity, ActivityStatus, Visibility } from './entities/activity.entity';
+import { Rsvp } from '../rsvp/entities/rsvp.entity';
 import { UsersService } from '../users/users.service';
 import { ENDED_ACTIVITY_STATUSES } from './activity.utils';
 import { FriendsService } from '../friends/friends.service';
@@ -39,6 +40,8 @@ export class ActivitiesService {
   constructor(
     @InjectRepository(Activity)
     private activitiesRepository: Repository<Activity>,
+    @InjectRepository(Rsvp)
+    private rsvpRepository: Repository<Rsvp>,
     private usersService: UsersService,
     @Inject(forwardRef(() => FriendsService))
     private friendsService: FriendsService,
@@ -196,7 +199,71 @@ export class ActivitiesService {
     activity.status = ActivityStatus.COMPLETED;
     activity.endTime = new Date();
 
+    await this.activitiesRepository.save(activity);
+
+    await this.applyTrustForCompletion(activity.id, activity.hostId);
+
+    return activity;
+  }
+
+  async makeLive(id: string, userId: string): Promise<Activity> {
+    const activity = await this.findById(id);
+
+    if (activity.hostId !== userId) {
+      throw new UnauthorizedException('Not the host of this activity');
+    }
+
+    if (activity.status === ActivityStatus.LIVE) {
+      return activity;
+    }
+
+    if (activity.status === ActivityStatus.COMPLETED || activity.status === ActivityStatus.CANCELLED) {
+      throw new BadRequestException('Cannot go live - activity already ended or cancelled');
+    }
+
+    activity.status = ActivityStatus.LIVE;
     return this.activitiesRepository.save(activity);
+  }
+
+  private async applyTrustForCompletion(activityId: string, hostId: string): Promise<void> {
+    const rsvps = await this.rsvpRepository.find({
+      where: { activityId },
+    });
+
+    const checkedInCount = rsvps.filter((r) => r.checkedIn).length;
+
+    await this.usersService.modifyTrustScore(hostId, 10);
+
+    for (const rsvp of rsvps) {
+      if (rsvp.checkedIn) {
+        await this.usersService.modifyTrustScore(rsvp.userId, 5);
+      }
+    }
+  }
+
+  async cancelWithPenalty(id: string, userId: string): Promise<Activity> {
+    const activity = await this.findById(id);
+
+    if (activity.hostId !== userId) {
+      throw new UnauthorizedException('Not the host of this activity');
+    }
+
+    const rsvps = await this.rsvpRepository.find({
+      where: { activityId: id },
+    });
+
+    const hadAttendees = rsvps.length > 0;
+
+    activity.status = ActivityStatus.CANCELLED;
+    activity.endTime = new Date();
+
+    await this.activitiesRepository.save(activity);
+
+    if (hadAttendees) {
+      await this.usersService.modifyTrustScore(userId, -15);
+    }
+
+    return activity;
   }
 
   async delete(id: string, userId: string): Promise<void> {
