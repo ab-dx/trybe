@@ -12,6 +12,6 @@ export const ActivityScreen: React.FC = () => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#080e1f",
+		backgroundColor: "#D8CFC0",
 	},
 });

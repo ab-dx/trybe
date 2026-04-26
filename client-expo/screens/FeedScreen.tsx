@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import { ActivityCard, ActivityProps } from "../components/ActivityCard";
 import { useAuth } from "../lib/auth/AuthContext";
-import { 
-	fetchProfile, 
-	fetchMyRsvps, 
-	joinActivity, 
+import {
+	fetchProfile,
+	fetchMyRsvps,
+	joinActivity,
 	fetchActivities,
 	hypeActivity,
 	unhypeActivity,
@@ -179,7 +179,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	if (loading) {
 		return (
 			<View style={[styles.container, styles.centered]}>
-				<ActivityIndicator size="large" color="#6366f1" />
+				<ActivityIndicator size="large" color="#38322C" />
 			</View>
 		);
 	}
@@ -187,48 +187,50 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	return (
 		<View style={styles.container}>
 			<View style={styles.headerContainer}>
-				<View style={styles.titleRow}>
-					<Text style={styles.headerTitle}>The Feed</Text>
-					<View style={styles.filterToggle}>
-						<TouchableOpacity
-							style={[
-								styles.filterButton,
-								!friendsOnly && styles.filterButtonActive,
-							]}
-							onPress={() => setFriendsOnly(false)}
-						>
-							<Text
-								style={[
-									styles.filterButtonText,
-									!friendsOnly && styles.filterButtonTextActive,
-								]}
-							>
-								All
-							</Text>
-						</TouchableOpacity>
-						<TouchableOpacity
-							style={[
-								styles.filterButton,
-								friendsOnly && styles.filterButtonActive,
-							]}
-							onPress={() => setFriendsOnly(true)}
-						>
-							<Text
-								style={[
-									styles.filterButtonText,
-									friendsOnly && styles.filterButtonTextActive,
-								]}
-							>
-								Friends
-							</Text>
-						</TouchableOpacity>
-					</View>
-				</View>
+				<Text style={styles.headerTitle}>The Feed</Text>
 				<Text style={styles.headerSubtitle}>
 					{friendsOnly
 						? "See what your friends are up to."
 						: "See what the Trybe is up to."}
 				</Text>
+			</View>
+
+			{/* Filter Pills */}
+			<View style={styles.filterRow}>
+				<TouchableOpacity
+					style={[
+						styles.filterPill,
+						!friendsOnly && styles.filterPillActive,
+					]}
+					onPress={() => setFriendsOnly(false)}
+					activeOpacity={0.8}
+				>
+					<Text
+						style={[
+							styles.filterPillText,
+							!friendsOnly && styles.filterPillTextActive,
+						]}
+					>
+						All
+					</Text>
+				</TouchableOpacity>
+				<TouchableOpacity
+					style={[
+						styles.filterPill,
+						friendsOnly && styles.filterPillActive,
+					]}
+					onPress={() => setFriendsOnly(true)}
+					activeOpacity={0.8}
+				>
+					<Text
+						style={[
+							styles.filterPillText,
+							friendsOnly && styles.filterPillTextActive,
+						]}
+					>
+						Friends
+					</Text>
+				</TouchableOpacity>
 			</View>
 
 			<FlatList
@@ -257,8 +259,8 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 					<RefreshControl
 						refreshing={refreshing}
 						onRefresh={onRefresh}
-						tintColor="#6366f1"
-						colors={["#6366f1"]}
+						tintColor="#38322C"
+						colors={["#38322C"]}
 					/>
 				}
 				ListEmptyComponent={
@@ -275,8 +277,8 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#080e1f",
-		paddingHorizontal: 16,
+		backgroundColor: "#D8CFC0",
+		paddingHorizontal: 24,
 		paddingTop: 16,
 	},
 	centered: {
@@ -286,42 +288,41 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		marginBottom: 16,
 	},
-	titleRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-	},
 	headerTitle: {
-		color: "#ffffff",
-		fontSize: 30,
-		fontWeight: "bold",
-		letterSpacing: -0.5,
+		color: "#221d18",
+		fontSize: 32,
+		fontWeight: "600",
+		letterSpacing: -0.3,
+		fontFamily: "PlusJakartaSans_600SemiBold",
 	},
 	headerSubtitle: {
-		color: "#94a3b8",
-		fontSize: 14,
+		color: "#4c463f",
+		fontSize: 16,
 		marginTop: 4,
+		fontFamily: "Inter_400Regular",
 	},
-	filterToggle: {
+	filterRow: {
 		flexDirection: "row",
-		backgroundColor: "#1e293b",
-		borderRadius: 8,
-		padding: 2,
+		gap: 12,
+		marginBottom: 20,
 	},
-	filterButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		borderRadius: 6,
+	filterPill: {
+		paddingHorizontal: 24,
+		paddingVertical: 10,
+		borderRadius: 9999,
+		backgroundColor: "#e6e1e0",
 	},
-	filterButtonActive: {
-		backgroundColor: "#3396ff",
+	filterPillActive: {
+		backgroundColor: "#221d18",
 	},
-	filterButtonText: {
-		color: "#64748b",
-		fontSize: 13,
+	filterPillText: {
+		color: "#1c1b1b",
+		fontSize: 14,
 		fontWeight: "600",
+		fontFamily: "Inter_600SemiBold",
+		letterSpacing: 0.3,
 	},
-	filterButtonTextActive: {
+	filterPillTextActive: {
 		color: "#ffffff",
 	},
 	listContent: {
@@ -333,12 +334,14 @@ const styles = StyleSheet.create({
 		paddingVertical: 80,
 	},
 	emptyTitle: {
-		color: "#64748b",
+		color: "#526168",
 		fontSize: 18,
+		fontFamily: "Inter_500Medium",
 	},
 	emptySubtitle: {
-		color: "#475569",
+		color: "#7e766e",
 		marginTop: 8,
 		fontSize: 14,
+		fontFamily: "Inter_400Regular",
 	},
 });

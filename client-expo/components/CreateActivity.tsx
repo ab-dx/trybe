@@ -12,6 +12,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as Location from "expo-location";
 import MapView, { Marker, UrlTile } from "react-native-maps";
+import { MaterialIcons } from "@expo/vector-icons";
 
 // 1. Import your custom auth hook
 import { useAuth } from "../lib/auth/AuthContext";
@@ -109,7 +110,7 @@ export default function CreateActivity() {
         return (
             <View style={styles.guestContainer}>
                 <View style={styles.guestIconWrapper}>
-                    <Text style={{ fontSize: 40 }}>🔥</Text>
+                    <MaterialIcons name="explore" size={36} color="#38322C" />
                 </View>
                 <Text style={styles.guestTitle}>Host an Activity</Text>
                 <Text style={styles.guestSubtitle}>
@@ -125,16 +126,45 @@ export default function CreateActivity() {
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.content}>
 			<Text style={styles.headerTitle}>Host an Activity</Text>
+			<Text style={styles.headerSubtitle}>
+				Gather your tribe and create a new experience.
+			</Text>
 
 			<View style={styles.inputGroup}>
 				<Text style={styles.label}>Activity Title</Text>
 				<TextInput
 					style={styles.input}
 					placeholder="e.g. Sunset 5K Run, Acoustic Jam..."
-					placeholderTextColor="#64748B"
+					placeholderTextColor="rgba(76, 70, 63, 0.4)"
 					value={title}
 					onChangeText={setTitle}
 				/>
+			</View>
+
+			<View style={styles.inputGroup}>
+				<Text style={styles.label}>Start Time</Text>
+				<TouchableOpacity
+					style={styles.input}
+					onPress={() => setShowDatePicker(true)}
+				>
+					<View style={styles.timeInputRow}>
+						<Text style={styles.timeText}>
+							{startTime.toLocaleString([], {
+								dateStyle: "medium",
+								timeStyle: "short",
+							})}
+						</Text>
+						<MaterialIcons name="calendar-today" size={20} color="#526168" />
+					</View>
+				</TouchableOpacity>
+				{showDatePicker && (
+					<DateTimePicker
+						value={startTime}
+						mode="datetime"
+						display="default"
+						onChange={onDateChange}
+					/>
+				)}
 			</View>
 
 			<View style={styles.inputGroup}>
@@ -142,7 +172,7 @@ export default function CreateActivity() {
 				<TextInput
 					style={[styles.input, styles.textArea]}
 					placeholder="What's the plan?"
-					placeholderTextColor="#64748B"
+					placeholderTextColor="rgba(76, 70, 63, 0.4)"
 					multiline
 					numberOfLines={4}
 					value={description}
@@ -184,11 +214,12 @@ export default function CreateActivity() {
 										lng: e.nativeEvent.coordinate.longitude,
 									})
 								}
-								pinColor="#3B82F6"
+								pinColor="#4c2c00"
 								zIndex={2}
 							/>
 						</MapView>
 						<View style={styles.mapHintContainer}>
+							<MaterialIcons name="touch-app" size={14} color="#4c463f" />
 							<Text style={styles.mapHint}>
 								Hold and drag the pin to adjust
 							</Text>
@@ -196,197 +227,211 @@ export default function CreateActivity() {
 					</View>
 				) : (
 					<View style={[styles.mapContainer, styles.mapPlaceholder]}>
-						<ActivityIndicator color="#3B82F6" />
+						<ActivityIndicator color="#38322C" />
 						<Text style={styles.mapHintPlaceholder}>Locating you...</Text>
 					</View>
 				)}
 			</View>
 
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Start Time</Text>
+			{/* Action Buttons */}
+			<View style={styles.actionContainer}>
 				<TouchableOpacity
-					style={styles.input}
-					onPress={() => setShowDatePicker(true)}
+					style={[
+						styles.submitButton,
+						isSubmitting && styles.submitButtonDisabled,
+					]}
+					onPress={handleCreate}
+					disabled={isSubmitting || !location}
 				>
-					<Text style={{ color: "#E2E8F0" }}>
-						{startTime.toLocaleString([], {
-							dateStyle: "medium",
-							timeStyle: "short",
-						})}
-					</Text>
+					{isSubmitting ? (
+						<ActivityIndicator color="#D8CFC0" />
+					) : (
+						<Text style={styles.submitButtonText}>Create Activity</Text>
+					)}
 				</TouchableOpacity>
-				{showDatePicker && (
-					<DateTimePicker
-						value={startTime}
-						mode="datetime"
-						display="default"
-						onChange={onDateChange}
-					/>
-				)}
-			</View>
 
-			<View style={styles.inputGroup}>
-				<Text style={styles.label}>Visibility</Text>
-				<View style={styles.toggleContainer}>
-					{["PUBLIC", "FRIENDS", "PRIVATE"].map((vis) => (
-						<TouchableOpacity
-							key={vis}
-							style={[
-								styles.toggleButton,
-								visibility === vis && styles.toggleActive,
-							]}
-							onPress={() => setVisibility(vis)}
-						>
-							<Text
-								style={[
-									styles.toggleText,
-									visibility === vis && styles.toggleTextActive,
-								]}
-							>
-								{vis}
-							</Text>
-						</TouchableOpacity>
-					))}
-				</View>
+				<TouchableOpacity style={styles.draftButton}>
+					<Text style={styles.draftButtonText}>Save as Draft</Text>
+				</TouchableOpacity>
 			</View>
-
-			<TouchableOpacity
-				style={[
-					styles.submitButton,
-					isSubmitting && styles.submitButtonDisabled,
-				]}
-				onPress={handleCreate}
-				disabled={isSubmitting || !location}
-			>
-				{isSubmitting ? (
-					<ActivityIndicator color="#FFFFFF" />
-				) : (
-					<Text style={styles.submitButtonText}>Create Activity</Text>
-				)}
-			</TouchableOpacity>
 		</ScrollView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: "#0F172A" },
+	container: { flex: 1, backgroundColor: "#D8CFC0" },
 	content: { padding: 24, paddingBottom: 60 },
 	headerTitle: {
-		fontSize: 28,
-		fontWeight: "bold",
-		color: "#FFFFFF",
-		marginBottom: 24,
-		marginTop: 40,
+		fontSize: 32,
+		fontWeight: "600",
+		color: "#221d18",
+		marginBottom: 8,
+		marginTop: 16,
+		fontFamily: "PlusJakartaSans_600SemiBold",
+		letterSpacing: -0.3,
+	},
+	headerSubtitle: {
+		fontSize: 16,
+		color: "#4c463f",
+		marginBottom: 32,
+		fontFamily: "Inter_400Regular",
+		lineHeight: 24,
 	},
 
-	inputGroup: { marginBottom: 20 },
+	inputGroup: { marginBottom: 24 },
 	label: {
-		color: "#94A3B8",
+		color: "#221d18",
 		fontSize: 14,
 		fontWeight: "600",
 		marginBottom: 8,
-		textTransform: "uppercase",
+		fontFamily: "Inter_600SemiBold",
+		letterSpacing: 0.3,
 	},
 	input: {
-		backgroundColor: "#1E293B",
-		color: "#E2E8F0",
+		backgroundColor: "#E2DACF",
+		color: "#1c1b1b",
 		padding: 16,
 		borderRadius: 12,
 		fontSize: 16,
+		borderWidth: 1.5,
+		borderColor: "rgba(82, 97, 104, 0.2)",
+		fontFamily: "Inter_400Regular",
 	},
-	textArea: { height: 100, textAlignVertical: "top" },
+	textArea: { height: 120, textAlignVertical: "top" },
+	timeInputRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+	},
+	timeText: {
+		color: "#1c1b1b",
+		fontSize: 16,
+		fontFamily: "Inter_400Regular",
+	},
 
 	// Map Styles
 	mapContainer: {
-		height: 200,
-		borderRadius: 12,
+		borderRadius: 16,
 		overflow: "hidden",
-		backgroundColor: "#1E293B",
+		backgroundColor: "#f2edeb",
 		marginTop: 4,
+		shadowColor: "rgba(56, 50, 44, 0.08)",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 1,
+		shadowRadius: 16,
+		elevation: 3,
 	},
-	map: { flex: 1 },
+	map: { height: 200 },
 	mapHintContainer: {
-		position: "absolute",
-		bottom: 12,
-		alignSelf: "center",
-		backgroundColor: "rgba(15, 23, 42, 0.8)",
-		paddingHorizontal: 16,
-		paddingVertical: 6,
-		borderRadius: 20,
-	},
-	mapHint: { color: "#E2E8F0", fontSize: 12, fontWeight: "600" },
-	mapPlaceholder: { justifyContent: "center", alignItems: "center", gap: 12 },
-	mapHintPlaceholder: { color: "#94A3B8", fontSize: 14 },
-
-	toggleContainer: { flexDirection: "row", gap: 8 },
-	toggleButton: {
-		flex: 1,
-		paddingVertical: 12,
-		borderRadius: 8,
-		backgroundColor: "#1E293B",
+		flexDirection: "row",
 		alignItems: "center",
+		gap: 8,
+		backgroundColor: "#E2DACF",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		borderTopWidth: 1,
+		borderTopColor: "rgba(34, 29, 24, 0.05)",
 	},
-	toggleActive: { backgroundColor: "#3B82F6" },
-	toggleText: { color: "#94A3B8", fontWeight: "bold", fontSize: 12 },
-	toggleTextActive: { color: "#FFFFFF" },
+	mapHint: {
+		color: "#4c463f",
+		fontSize: 12,
+		fontWeight: "500",
+		fontFamily: "Inter_500Medium",
+		letterSpacing: 0.5,
+	},
+	mapPlaceholder: { height: 200, justifyContent: "center", alignItems: "center", gap: 12 },
+	mapHintPlaceholder: { color: "#526168", fontSize: 14, fontFamily: "Inter_400Regular" },
 
+	// Action Buttons
+	actionContainer: { marginTop: 24, gap: 12 },
 	submitButton: {
-		backgroundColor: "#10B981",
-		paddingVertical: 16,
+		backgroundColor: "#221d18",
+		paddingVertical: 18,
 		borderRadius: 12,
 		alignItems: "center",
-		marginTop: 20,
+		shadowColor: "rgba(56, 50, 44, 0.15)",
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 1,
+		shadowRadius: 16,
+		elevation: 5,
 	},
 	submitButtonDisabled: { opacity: 0.6 },
-	submitButtonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 18 },
+	submitButtonText: {
+		color: "#D8CFC0",
+		fontWeight: "600",
+		fontSize: 14,
+		fontFamily: "Inter_600SemiBold",
+		letterSpacing: 0.3,
+	},
+	draftButton: {
+		backgroundColor: "transparent",
+		borderWidth: 1.5,
+		borderColor: "#221d18",
+		paddingVertical: 18,
+		borderRadius: 12,
+		alignItems: "center",
+	},
+	draftButtonText: {
+		color: "#221d18",
+		fontWeight: "600",
+		fontSize: 14,
+		fontFamily: "Inter_600SemiBold",
+		letterSpacing: 0.3,
+	},
+
+	// Guest Styles
 	guestContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#080e1f',
+        backgroundColor: '#D8CFC0',
         padding: 32,
     },
     guestTitle: {
-        color: '#fff',
+        color: '#221d18',
         fontSize: 24,
-        fontWeight: 'bold',
+        fontWeight: '600',
         marginTop: 24,
+        fontFamily: 'PlusJakartaSans_600SemiBold',
     },
     guestSubtitle: {
-        color: '#94a3b8',
-        fontSize: 15,
+        color: '#4c463f',
+        fontSize: 16,
         textAlign: 'center',
         marginTop: 12,
         marginBottom: 32,
-        lineHeight: 22,
+        lineHeight: 24,
+        fontFamily: 'Inter_400Regular',
     },
     guestButton: {
-        backgroundColor: '#3396ff',
+        backgroundColor: '#221d18',
         paddingHorizontal: 32,
-        paddingVertical: 14,
+        paddingVertical: 16,
         borderRadius: 12,
         width: '100%',
         alignItems: 'center',
     },
     guestButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
+        color: '#D8CFC0',
+        fontSize: 14,
+        fontWeight: '600',
+        fontFamily: 'Inter_600SemiBold',
+        letterSpacing: 0.3,
     },
 	guestIconWrapper: {
         width: 88,
         height: 88,
         borderRadius: 44,
-        backgroundColor: '#1e293b', // A subtle slate background
+        backgroundColor: '#E2DACF',
         borderWidth: 2,
-        borderColor: '#334155',
+        borderColor: 'rgba(56, 50, 44, 0.1)',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 16,
-        shadowColor: '#000',
+        shadowColor: 'rgba(56, 50, 44, 0.08)',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
+        shadowOpacity: 1,
+        shadowRadius: 16,
         elevation: 5,
     },
 });

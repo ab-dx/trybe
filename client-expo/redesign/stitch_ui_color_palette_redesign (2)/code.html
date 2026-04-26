@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TRYBE | The Feed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#d2e2ea",
+                    "surface-bright": "#fdf8f7",
+                    "surface": "#fdf8f7",
+                    "tertiary-fixed": "#ffddbb",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#201b15",
+                    "inverse-primary": "#cfc5bc",
+                    "secondary-fixed-dim": "#b9c9d1",
+                    "inverse-on-surface": "#f5f0ee",
+                    "primary-fixed-dim": "#cfc5bc",
+                    "tertiary-container": "#4c2c00",
+                    "on-tertiary-fixed": "#2b1700",
+                    "on-secondary-container": "#56656c",
+                    "surface-container": "#f2edeb",
+                    "on-secondary": "#ffffff",
+                    "surface-dim": "#ddd9d7",
+                    "error": "#ba1a1a",
+                    "inverse-surface": "#32302f",
+                    "surface-container-low": "#f7f3f1",
+                    "tertiary-fixed-dim": "#f7bb78",
+                    "on-tertiary": "#ffffff",
+                    "primary": "#221d18",
+                    "on-tertiary-fixed-variant": "#663e04",
+                    "on-secondary-fixed": "#0f1e23",
+                    "on-error": "#ffffff",
+                    "secondary": "#526168",
+                    "surface-variant": "#e6e1e0",
+                    "primary-container": "#38322c",
+                    "on-primary": "#ffffff",
+                    "on-background": "#1c1b1b",
+                    "surface-tint": "#655d56",
+                    "on-surface": "#1c1b1b",
+                    "error-container": "#ffdad6",
+                    "outline": "#7e766e",
+                    "on-primary-fixed-variant": "#4c463f",
+                    "on-surface-variant": "#4c463f",
+                    "tertiary": "#2f1900",
+                    "secondary-fixed": "#d5e5ed",
+                    "surface-container-highest": "#e6e1e0",
+                    "on-primary-container": "#a39a92",
+                    "outline-variant": "#cfc5bc",
+                    "primary-fixed": "#ece1d8",
+                    "surface-container-high": "#ece7e6",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-fixed-variant": "#3a4950",
+                    "on-tertiary-container": "#c79152",
+                    "background": "#fdf8f7"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "xs": "8px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "gutter": "16px",
+                    "margin": "24px",
+                    "3xl": "64px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "2xl": "48px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #D8CFC0; /* Root Background from Brand Rules */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .nav-active-indicator {
+            position: relative;
+        }
+        .nav-active-indicator::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #38322C;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-background selection:bg-tertiary-fixed">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#D8CFC0] dark:bg-stone-900 border-b border-[#38322C]/10 dark:border-stone-800 shadow-sm dark:shadow-none">
+<div class="flex justify-between items-center px-6 h-16 w-full max-w-screen-xl mx-auto">
+<button class="text-[#38322C] dark:text-stone-100 active:scale-95 duration-200 transition-opacity hover:opacity-80">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<h1 class="text-2xl font-bold tracking-widest text-[#38322C] dark:text-stone-50 font-sans">TRYBE</h1>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-primary/10 transition-opacity hover:opacity-80 cursor-pointer">
+<img alt="User" data-alt="close up professional headshot of a smiling young adult with warm lighting and soft natural background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCs_Gqt7uctqEXAqUjEnp3BwjmSoNYz6F2ZrPpI5mh1KNZ-A8ag-QJWGlF5z4rFYYdP3VqPF8Hs8uw10cV7NXFH9lkg6P8g66LdAV8Ve7ai0DB0Msvbsg876D95R0SUHeVwO6RmDPY8FYv6pzSrBh6ba9PYOlyym80m4hd8T1QeWuRleGbkTAVb3rhQMYQ_aTelDbDb2V2l8KT-npPi426lG7ieLjrnv6tBKhIydV78xzzbc1NTvG4KeWZV7sm-JNClJdojsJB9uXs"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 pb-32 px-margin max-w-2xl mx-auto min-h-screen">
+<!-- Header Section -->
+<section class="mb-xl">
+<h2 class="font-headline-lg text-headline-lg text-primary">The Feed</h2>
+<p class="font-body-md text-on-surface-variant mt-1">See what the Trybe is up to.</p>
+</section>
+<!-- Filters -->
+<nav class="flex gap-sm mb-xl sticky top-20 z-40 bg-[#D8CFC0]/80 backdrop-blur-md py-2 -mx-4 px-4">
+<button class="px-lg py-xs rounded-full bg-primary text-on-primary font-label-lg transition-transform active:scale-95">
+                All
+            </button>
+<button class="px-lg py-xs rounded-full bg-surface-container-highest text-on-surface font-label-lg hover:bg-surface-dim transition-colors">
+                Friends
+            </button>
+</nav>
+<!-- Activity Feed -->
+<div class="space-y-lg">
+<!-- Card 1 -->
+<article class="bg-[#E2DACF] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(56,50,44,0.08)] border border-secondary/10">
+<div class="p-lg">
+<!-- User Info Row -->
+<div class="flex items-center gap-md mb-md">
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="test2 profile" data-alt="candid lifestyle portrait of a young man in a minimalist cafe setting with soft natural window light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiLC43qwI9uDF30v2hnTYu-5z1U3tO4p9DT0HI5Xr5LdEiSSsL_156sRRcGh5P-CxjALSXy6aPW0J7JVXpuR5KVu_eJ9VBfeD-1fJ1UO1tmdo0rc-4YZzUD9Yq5crvxWJGkdO4MBIw7DBE7YjjbE8tsUPd3bfF4wMpZtEJzGB3hIw2V5kOye76_X_otyeDDutZVZ74OZln0508FsudiYwTEGbyhdSyxtiyAHykITVd4mx0qvxoMcqS3dI_vlec9v4Ce9fREy47ld8"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-xs">
+<span class="font-label-lg text-primary">test2</span>
+<span class="text-[10px] bg-tertiary-container/10 text-on-tertiary-container px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Veteran 100</span>
+</div>
+<span class="font-label-sm text-on-surface-variant">Apr 10 • 11:47 PM</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Content -->
+<div class="mb-lg">
+<h3 class="font-headline-md text-headline-md text-primary mb-xs">QC101</h3>
+<p class="font-body-md text-on-surface mb-md">quizz time</p>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-sm bg-surface-container-low p-sm rounded-lg">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+                            801106, Dayalpur Daulatpur
+                        </div>
+</div>
+<!-- Visual Media (Bento Feel) -->
+<div class="aspect-video w-full rounded-xl overflow-hidden mb-lg relative">
+<img class="w-full h-full object-cover" data-alt="atmospheric indoor shot of a lively trivia night with friends gathered around a wooden table, warm ambient lighting and soft bokeh" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHt8ynv58Cj5-1kRSXJ5PT4kRu2FRTcAEXR78o08pUYi7_mQR-R3XcmLvllMxVUaJooy31NJ9OiI8ESfMAaJhZQi5k6zAB_H1VetcLM_cw21ub1HAHQULGfhUTlXLUJnnV-MFX8X0QzhxgiA4n3fi2b1mIFrqzntQXgEkn1eK_JSKGIoPJ49_ePxNhou5xgeQl648jJBDgEQiUTI05kpX5m9O_kFAoahYMc148Vt5PZ5ssPG0dUqKIFdW8R0Uc7SIhyuqx6234znk"/>
+<div class="absolute bottom-3 right-3 bg-primary/80 backdrop-blur-sm px-3 py-1.5 rounded-full text-on-primary flex items-center gap-1.5 shadow-lg">
+<span class="material-symbols-outlined text-[16px]" data-weight="fill">group</span>
+<span class="font-label-sm">1 RSVP</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex gap-md">
+<button class="flex-1 flex items-center justify-center gap-sm bg-primary text-on-primary py-3 rounded-lg font-label-lg active:scale-95 transition-transform">
+                            Join
+                        </button>
+<button class="aspect-square w-12 flex items-center justify-center border-[1.5px] border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined">bolt</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-[#E2DACF] rounded-xl overflow-hidden shadow-[0_4px_16px_rgba(56,50,44,0.08)] border border-secondary/10">
+<div class="p-lg">
+<!-- User Info Row -->
+<div class="flex items-center gap-md mb-md">
+<div class="h-10 w-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="test2 profile" data-alt="close up portrait of a relaxed young adult with warm skin tones and natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjH2wOk91B0WAJLhhGlBus95SxE9pLgyzluzf4VS3oIavMbn1tbWg5nb2pHHj3ffMtQVEh7CUrh7CXNzEbbASt6qcW7WbFFBPISrvPEkMidaZyzq2vqUgro3EQPvrrPHiueXMhdLEDIMn7DmFCwXLoUIrPLKwDByRNc4jSNDp1lcaFlonnCUCGGQbLKsp50mDKavV_kct4d8QxWUN06BXSeNLYu2ZJgDps89-6EVSSDfm8a-abFT-vTyasvG_8IOACrxfhVQi1r4g"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-xs">
+<span class="font-label-lg text-primary">test2</span>
+<span class="text-[10px] bg-tertiary-container/10 text-on-tertiary-container px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter">Veteran 100</span>
+</div>
+<span class="font-label-sm text-on-surface-variant">Apr 10 • 8:46 PM</span>
+</div>
+</div>
+<!-- Content -->
+<div class="mb-lg">
+<h3 class="font-headline-md text-headline-md text-primary mb-xs">Active 1 Hr Gooning Session</h3>
+<p class="font-body-md text-on-surface mb-md">Goon to My Landlady Noona</p>
+<div class="flex flex-col gap-xs mb-lg">
+<div class="flex items-center gap-xs text-on-surface-variant font-label-sm bg-surface-container-low p-sm rounded-lg">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+                                GVR3+C4Q, Patna
+                            </div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-sm bg-surface-container-low p-sm rounded-lg">
+<span class="material-symbols-outlined text-[18px]">group</span>
+                                2 RSVPs
+                            </div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex gap-md">
+<button class="flex-1 flex items-center justify-center gap-sm bg-primary text-on-primary py-3 rounded-lg font-label-lg active:scale-95 transition-transform">
+                            Join Activity
+                        </button>
+<button class="px-4 flex items-center justify-center border-[1.5px] border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors gap-xs">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+<span class="font-label-sm">Hype</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- FAB (Contextual for Feed) -->
+<button class="fixed bottom-24 right-6 h-14 w-14 rounded-2xl bg-[#38322C] text-[#D8CFC0] shadow-xl flex items-center justify-center active:scale-95 transition-transform z-50">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#D8CFC0] dark:bg-stone-900 border-t border-[#38322C]/5 dark:border-stone-800 shadow-[0_-4px_16px_rgba(56,50,44,0.08)] z-50 rounded-t-3xl">
+<!-- Feed Tab (Active) -->
+<a class="flex flex-col items-center justify-center text-[#38322C] dark:text-stone-50 bg-[#E2DACF] dark:bg-stone-800 rounded-xl px-3 py-1 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dynamic_feed">dynamic_feed</span>
+<span class="text-[10px] font-bold uppercase tracking-wider mt-1">Feed</span>
+</a>
+<!-- Map Tab -->
+<a class="flex flex-col items-center justify-center text-[#38322C]/50 dark:text-stone-500 hover:text-[#38322C] dark:hover:text-stone-200 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="text-[10px] font-bold uppercase tracking-wider mt-1">Map</span>
+</a>
+<!-- Activity Tab -->
+<a class="flex flex-col items-center justify-center text-[#38322C]/50 dark:text-stone-500 hover:text-[#38322C] dark:hover:text-stone-200 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="text-[10px] font-bold uppercase tracking-wider mt-1">Activity</span>
+</a>
+<!-- Profile Tab -->
+<a class="flex flex-col items-center justify-center text-[#38322C]/50 dark:text-stone-500 hover:text-[#38322C] dark:hover:text-stone-200 active:scale-90 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] font-bold uppercase tracking-wider mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

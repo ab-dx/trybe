@@ -4,6 +4,19 @@ import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { Ionicons } from "@expo/vector-icons";
+import {
+	PlusJakartaSans_400Regular,
+	PlusJakartaSans_500Medium,
+	PlusJakartaSans_600SemiBold,
+	PlusJakartaSans_700Bold,
+	PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans";
+import {
+	Inter_400Regular,
+	Inter_500Medium,
+	Inter_600SemiBold,
+	Inter_700Bold,
+} from "@expo-google-fonts/inter";
 
 import { AuthProvider, useAuth } from "lib/auth/AuthContext";
 import { LoginScreen } from "components/LoginScreen";
@@ -27,6 +40,18 @@ const MainApp: React.FC = () => {
 		latitude: number;
 		longitude: number;
 	} | null>(null);
+
+	const [fontsLoaded] = useFonts({
+		PlusJakartaSans_400Regular,
+		PlusJakartaSans_500Medium,
+		PlusJakartaSans_600SemiBold,
+		PlusJakartaSans_700Bold,
+		PlusJakartaSans_800ExtraBold,
+		Inter_400Regular,
+		Inter_500Medium,
+		Inter_600SemiBold,
+		Inter_700Bold,
+	});
 
 	const handleJumpToMap = (latitude: number, longitude: number) => {
 		setMapFocus({ latitude, longitude });
@@ -53,7 +78,7 @@ const MainApp: React.FC = () => {
 		}
 	};
 
-	if (isLoading) {
+	if (isLoading || !fontsLoaded) {
 		return null;
 	}
 
@@ -66,7 +91,7 @@ const MainApp: React.FC = () => {
                     <StatusBar activeTab={activeTab} onTabPress={setActiveTab} />
                 </View>
 
-                <ExpoStatusBar style="light" />
+                <ExpoStatusBar style="dark" />
 
                 <Modal 
                     visible={showAuthModal} 
@@ -76,7 +101,7 @@ const MainApp: React.FC = () => {
                 >
                     <View style={styles.modalContainer}>
                         <TouchableOpacity style={styles.closeButton} onPress={closeAuthModal}>
-                            <Ionicons name="close" size={28} color="#94a3b8" />
+                            <Ionicons name="close" size={28} color="#7e766e" />
                         </TouchableOpacity>
 
                         {authScreen === "login" ? (
@@ -100,12 +125,12 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: "#080e1f" },
+	container: { flex: 1, backgroundColor: "#D8CFC0" },
     mainContent: { flex: 1 },
     screenContainer: { flex: 1 },
     modalContainer: {
         flex: 1,
-        backgroundColor: "#080e1f", // Match your app's dark theme
+        backgroundColor: "#D8CFC0",
     },
     closeButton: {
         position: "absolute",

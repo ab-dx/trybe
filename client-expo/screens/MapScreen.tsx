@@ -11,45 +11,19 @@ export const MapScreen: React.FC<MapScreenProps> = () => {
 	const [friendsOnly, setFriendsOnly] = useState(false);
 
 	return (
-		<View
-			style={{
-				flex: 1,
-				width: "100%",
-				alignItems: "center",
-			}}
-		>
+		<View style={{ flex: 1, width: "100%", alignItems: "center" }}>
 			<View style={styles.filterContainer}>
 				<TouchableOpacity
-					style={[
-						styles.filterButton,
-						!friendsOnly && styles.filterButtonActive,
-					]}
+					style={[styles.filterButton, !friendsOnly && styles.filterButtonActive]}
 					onPress={() => setFriendsOnly(false)}
 				>
-					<Text
-						style={[
-							styles.filterButtonText,
-							!friendsOnly && styles.filterButtonTextActive,
-						]}
-					>
-						All
-					</Text>
+					<Text style={[styles.filterButtonText, !friendsOnly && styles.filterButtonTextActive]}>All</Text>
 				</TouchableOpacity>
 				<TouchableOpacity
-					style={[
-						styles.filterButton,
-						friendsOnly && styles.filterButtonActive,
-					]}
+					style={[styles.filterButton, friendsOnly && styles.filterButtonActive]}
 					onPress={() => setFriendsOnly(true)}
 				>
-					<Text
-						style={[
-							styles.filterButtonText,
-							friendsOnly && styles.filterButtonTextActive,
-						]}
-					>
-						Friends
-					</Text>
+					<Text style={[styles.filterButtonText, friendsOnly && styles.filterButtonTextActive]}>Friends</Text>
 				</TouchableOpacity>
 			</View>
 			<RadarMap friendsOnly={friendsOnly} />
@@ -63,40 +37,30 @@ const styles = StyleSheet.create({
 		top: 12,
 		zIndex: 10,
 		flexDirection: "row",
-		backgroundColor: "#1e293b",
+		backgroundColor: "#E2DACF",
 		borderRadius: 8,
 		padding: 2,
+		shadowColor: "rgba(56, 50, 44, 0.15)",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 1,
+		shadowRadius: 8,
+		elevation: 4,
 	},
 	filterButton: {
-		paddingHorizontal: 14,
+		paddingHorizontal: 16,
 		paddingVertical: 8,
 		borderRadius: 6,
 	},
 	filterButtonActive: {
-		backgroundColor: "#3396ff",
+		backgroundColor: "#221d18",
 	},
 	filterButtonText: {
-		color: "#64748b",
+		color: "rgba(56, 50, 44, 0.4)",
 		fontSize: 13,
 		fontWeight: "600",
+		fontFamily: "Inter_600SemiBold",
 	},
 	filterButtonTextActive: {
-		color: "#ffffff",
-	},
-	container: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "#080e1f",
-	},
-	title: {
-		fontSize: 32,
-		fontWeight: "bold",
-		color: "#fff",
-	},
-	subtitle: {
-		fontSize: 16,
-		color: "#9ca3af",
-		marginTop: 8,
+		color: "#D8CFC0",
 	},
 });

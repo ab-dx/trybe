@@ -188,13 +188,13 @@ const styles = StyleSheet.create({
 	calloutTime: {
 		fontSize: 12,
 		fontWeight: "600",
-		color: "#007AFF",
+		color: "#c79152",
 	},
 	overlayMessage: {
 		position: "absolute",
 		top: 20,
 		alignSelf: "center",
-		backgroundColor: "rgba(0, 0, 0, 0.75)",
+		backgroundColor: "rgba(34, 29, 24, 0.85)",
 		paddingHorizontal: 16,
 		paddingVertical: 8,
 		borderRadius: 20,

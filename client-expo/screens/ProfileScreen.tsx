@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
 	View,
 	Text,
@@ -12,8 +12,9 @@ import {
 	TextInput,
 	Modal,
 	FlatList,
+	Animated,
 } from "react-native";
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "../lib/auth/AuthContext";
 import {
 	endHostedActivity,
@@ -219,9 +220,9 @@ export const ProfileScreen: React.FC = () => {
 
 	useEffect(() => {
 		if (user) {
-		loadProfileData();
+			loadProfileData();
 		} else {
-		setLoading(false); 
+			setLoading(false);
 		}
 	}, [user, loadProfileData]);
 
@@ -233,7 +234,7 @@ export const ProfileScreen: React.FC = () => {
 	const handleLogout = async () => {
 		try {
 			await logout();
-		} catch {}
+		} catch { }
 	};
 
 	const runEndActivity = async (activityId: string) => {
@@ -525,25 +526,45 @@ export const ProfileScreen: React.FC = () => {
 		};
 	};
 
+	// --- ANIMATIONS (must be before early returns) ---
+	const avatarScale = useRef(new Animated.Value(0.5)).current;
+	const avatarOpacity = useRef(new Animated.Value(0)).current;
+	const contentFade = useRef(new Animated.Value(0)).current;
+	const statsSlide = useRef(new Animated.Value(40)).current;
+
+	useEffect(() => {
+		if (!user || loading || error || !profile) return;
+		Animated.sequence([
+			Animated.parallel([
+				Animated.spring(avatarScale, { toValue: 1, tension: 50, friction: 6, useNativeDriver: true }),
+				Animated.timing(avatarOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+			]),
+			Animated.parallel([
+				Animated.timing(contentFade, { toValue: 1, duration: 400, useNativeDriver: true }),
+				Animated.spring(statsSlide, { toValue: 0, tension: 40, friction: 7, useNativeDriver: true }),
+			]),
+		]).start();
+	}, [user, loading, error, profile]);
+
 	if (!user) {
-        return (
-            <View style={styles.guestContainer}>
-                <Ionicons name="shield-checkmark-outline" size={80} color="#334155" />
-                <Text style={styles.guestTitle}>Join the Trybe</Text>
-                <Text style={styles.guestSubtitle}>
-                    Sign up to track your trust score, host events, and connect with friends on campus.
-                </Text>
-                <TouchableOpacity style={styles.guestButton} onPress={requireAuth}>
-                    <Text style={styles.guestButtonText}>Log In / Sign Up</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
+		return (
+			<View style={styles.guestContainer}>
+				<MaterialIcons name="shield" size={80} color="#cfc5bc" />
+				<Text style={styles.guestTitle}>Join the Trybe</Text>
+				<Text style={styles.guestSubtitle}>
+					Sign up to track your trust score, host events, and connect with friends on campus.
+				</Text>
+				<TouchableOpacity style={styles.guestButton} onPress={requireAuth}>
+					<Text style={styles.guestButtonText}>Log In / Sign Up</Text>
+				</TouchableOpacity>
+			</View>
+		);
+	}
 
 	if (loading) {
 		return (
 			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color="#3396ff" />
+				<ActivityIndicator size="large" color="#38322C" />
 				<Text style={styles.loadingText}>Loading profile…</Text>
 			</View>
 		);
@@ -552,7 +573,7 @@ export const ProfileScreen: React.FC = () => {
 	if (error || !profile) {
 		return (
 			<View style={styles.loadingContainer}>
-				<Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
+				<Ionicons name="alert-circle-outline" size={48} color="#ba1a1a" />
 				<Text style={styles.errorText}>
 					{error || "Failed to load profile"}
 				</Text>
@@ -568,25 +589,25 @@ export const ProfileScreen: React.FC = () => {
 			label: "Trust Score",
 			value: profile.trustScore,
 			icon: "shield-checkmark-outline" as const,
-			color: "#10b981",
+			color: "#3a4950",
 		},
 		{
 			label: "Hosted",
 			value: profile.activitiesHosted,
 			icon: "flag-outline" as const,
-			color: "#f59e0b",
+			color: "#3a4950",
 		},
 		{
 			label: "Joined",
 			value: profile.activitiesJoined,
 			icon: "people-outline" as const,
-			color: "#3b82f6",
+			color: "#3a4950",
 		},
 		{
 			label: "Check-ins",
 			value: profile.checkIns,
 			icon: "location-outline" as const,
-			color: "#8b5cf6",
+			color: "#3a4950",
 		},
 	];
 
@@ -598,12 +619,12 @@ export const ProfileScreen: React.FC = () => {
 				<RefreshControl
 					refreshing={refreshing}
 					onRefresh={onRefresh}
-					tintColor="#3396ff"
+					tintColor="#38322C"
 				/>
 			}
 		>
 			<View style={styles.header}>
-				<View style={styles.avatarGlow}>
+				<Animated.View style={[styles.avatarGlow, { opacity: avatarOpacity, transform: [{ scale: avatarScale }] }]}>
 					{user?.photoURL || profile.avatarUrl ? (
 						<Image
 							source={{ uri: user?.photoURL || profile.avatarUrl }}
@@ -616,20 +637,22 @@ export const ProfileScreen: React.FC = () => {
 							</Text>
 						</View>
 					)}
-				</View>
+				</Animated.View>
+				<Animated.View style={{ opacity: contentFade }}>
 				<Text style={styles.displayName}>
 					{profile.displayName || "Trybe Member"}
 				</Text>
 				<Text style={styles.email}>{profile.email}</Text>
 				<View style={styles.memberSince}>
-					<Feather name="calendar" size={13} color="#64748b" />
+					<Feather name="calendar" size={13} color="#7e766e" />
 					<Text style={styles.memberSinceText}>
 						Joined {formatDate(profile.createdAt)}
 					</Text>
 				</View>
+				</Animated.View>
 			</View>
 
-			<View style={styles.statsGrid}>
+			<Animated.View style={[styles.statsGrid, { opacity: contentFade, transform: [{ translateY: statsSlide }] }]}>
 				{stats.map((s) => (
 					<View key={s.label} style={styles.statCard}>
 						<Ionicons name={s.icon} size={22} color={s.color} />
@@ -639,13 +662,13 @@ export const ProfileScreen: React.FC = () => {
 						<Text style={styles.statLabel}>{s.label}</Text>
 					</View>
 				))}
-			</View>
+			</Animated.View>
 
 			<View style={styles.sectionHeader}>
-				<Feather name="flag" size={18} color="#f59e0b" />
+				<Feather name="flag" size={18} color="#c79152" />
 				<Text style={styles.sectionTitle}>Hosted by Me</Text>
-				<View style={[styles.badge, { backgroundColor: "#422006" }]}>
-					<Text style={[styles.badgeText, { color: "#f59e0b" }]}>
+				<View style={[styles.badge, { backgroundColor: "rgba(199,145,82,0.1)" }]}>
+					<Text style={[styles.badgeText, { color: "#c79152" }]}>
 						{activeHostedActivities.length}
 					</Text>
 				</View>
@@ -653,7 +676,7 @@ export const ProfileScreen: React.FC = () => {
 
 			{activeHostedActivities.length === 0 ? (
 				<View style={styles.emptyState}>
-					<Ionicons name="flag-outline" size={36} color="#334155" />
+					<Ionicons name="flag-outline" size={36} color="#cfc5bc" />
 					<Text style={styles.emptyText}>No active hosted events</Text>
 					<Text style={styles.emptySubtext}>
 						Events you end will move into Past Activities.
@@ -671,7 +694,7 @@ export const ProfileScreen: React.FC = () => {
 						<View style={styles.activityInfo}>
 							<Text style={styles.activityTitle}>{activity.title}</Text>
 							<View style={styles.activityMeta}>
-								<Feather name="clock" size={12} color="#64748b" />
+								<Feather name="clock" size={12} color="#7e766e" />
 								<Text style={styles.activityTime}>
 									{formatTime(activity.startTime)}
 								</Text>
@@ -727,7 +750,7 @@ export const ProfileScreen: React.FC = () => {
 			)}
 
 			<View style={styles.sectionHeader}>
-				<Feather name="clock" size={18} color="#3396ff" />
+				<Feather name="clock" size={18} color="#c79152" />
 				<Text style={styles.sectionTitle}>My RSVPs</Text>
 				<View style={styles.badge}>
 					<Text style={styles.badgeText}>{upcomingRsvps.length}</Text>
@@ -736,7 +759,7 @@ export const ProfileScreen: React.FC = () => {
 
 			{upcomingRsvps.length === 0 ? (
 				<View style={styles.emptyState}>
-					<Ionicons name="calendar-outline" size={36} color="#334155" />
+					<Ionicons name="calendar-outline" size={36} color="#cfc5bc" />
 					<Text style={styles.emptyText}>No upcoming RSVPs</Text>
 					<Text style={styles.emptySubtext}>
 						Join an event from the Map or Feed!
@@ -785,10 +808,10 @@ export const ProfileScreen: React.FC = () => {
 			)}
 
 			<View style={[styles.sectionHeader, { marginTop: 28 }]}>
-				<Feather name="archive" size={18} color="#8b5cf6" />
+				<Feather name="archive" size={18} color="#4c2c00" />
 				<Text style={styles.sectionTitle}>Past Activities</Text>
-				<View style={[styles.badge, { backgroundColor: "#1e1b4b" }]}>
-					<Text style={[styles.badgeText, { color: "#8b5cf6" }]}>
+				<View style={[styles.badge, { backgroundColor: "rgba(76,44,0,0.08)" }]}>
+					<Text style={[styles.badgeText, { color: "#4c2c00" }]}>
 						{pastActivities.length}
 					</Text>
 				</View>
@@ -796,7 +819,7 @@ export const ProfileScreen: React.FC = () => {
 
 			{pastActivities.length === 0 ? (
 				<View style={styles.emptyState}>
-					<Ionicons name="time-outline" size={36} color="#334155" />
+					<Ionicons name="time-outline" size={36} color="#cfc5bc" />
 					<Text style={styles.emptyText}>No past activities yet</Text>
 				</View>
 			) : (
@@ -817,7 +840,7 @@ export const ProfileScreen: React.FC = () => {
 							<View style={styles.activityInfo}>
 								<Text style={styles.activityTitle}>{item.activity.title}</Text>
 								<View style={styles.activityMeta}>
-									<Feather name="check-circle" size={12} color="#64748b" />
+									<Feather name="check-circle" size={12} color="#7e766e" />
 									<Text style={styles.activityTime}>
 										{formatTime(item.activity.startTime)}
 									</Text>
@@ -846,20 +869,20 @@ export const ProfileScreen: React.FC = () => {
 			)}
 
 			<View style={[styles.sectionHeader, { marginTop: 28 }]}>
-				<Feather name="users" size={18} color="#f59e0b" />
+				<Feather name="users" size={18} color="#c79152" />
 				<Text style={styles.sectionTitle}>Friends</Text>
 				<TouchableOpacity
 					style={styles.addFriendButton}
 					onPress={() => setShowSearchModal(true)}
 				>
-					<Ionicons name="person-add-outline" size={14} color="#3396ff" />
+					<Ionicons name="person-add-outline" size={14} color="#c79152" />
 					<Text style={styles.addFriendText}>Add</Text>
 				</TouchableOpacity>
 			</View>
 
 			{loadingFriends ? (
 				<View style={styles.emptyState}>
-					<ActivityIndicator size="small" color="#3396ff" />
+					<ActivityIndicator size="small" color="#38322C" />
 				</View>
 			) : (
 				<>
@@ -937,7 +960,7 @@ export const ProfileScreen: React.FC = () => {
 
 					{friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
 						<View style={styles.emptyState}>
-							<Ionicons name="people-outline" size={36} color="#334155" />
+							<Ionicons name="people-outline" size={36} color="#cfc5bc" />
 							<Text style={styles.emptyText}>No friends yet</Text>
 							<Text style={styles.emptySubtext}>
 								Add friends to see their activities!
@@ -987,13 +1010,13 @@ export const ProfileScreen: React.FC = () => {
 						<View style={styles.modalHeader}>
 							<Text style={styles.modalTitle}>Find Friends</Text>
 							<TouchableOpacity onPress={() => setShowSearchModal(false)}>
-								<Ionicons name="close" size={24} color="#fff" />
+								<Ionicons name="close" size={24} color="#221d18" />
 							</TouchableOpacity>
 						</View>
 						<TextInput
 							style={styles.searchInput}
 							placeholder="Search by email or name..."
-							placeholderTextColor="#64748b"
+							placeholderTextColor="#7e766e"
 							value={searchQuery}
 							onChangeText={handleSearchUsers}
 							autoCapitalize="none"
@@ -1066,7 +1089,7 @@ export const ProfileScreen: React.FC = () => {
 			</Modal>
 
 			<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-				<Ionicons name="log-out-outline" size={20} color="#ef4444" />
+				<Ionicons name="log-out-outline" size={20} color="#ba1a1a" />
 				<Text style={styles.logoutText}>Sign Out</Text>
 			</TouchableOpacity>
 		</ScrollView>
@@ -1074,428 +1097,90 @@ export const ProfileScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: "#080e1f" },
+	container: { flex: 1, backgroundColor: "#D8CFC0" },
 	content: { paddingBottom: 40 },
-	loadingContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		backgroundColor: "#080e1f",
-	},
-	loadingText: { color: "#64748b", marginTop: 12, fontSize: 14 },
-	errorText: { color: "#ef4444", marginTop: 12, fontSize: 16 },
-	retryButton: {
-		marginTop: 16,
-		paddingHorizontal: 24,
-		paddingVertical: 10,
-		backgroundColor: "#1e293b",
-		borderRadius: 8,
-	},
-	retryText: { color: "#3396ff", fontWeight: "600" },
-	header: {
-		alignItems: "center",
-		paddingTop: 32,
-		paddingBottom: 24,
-		borderBottomWidth: 1,
-		borderBottomColor: "#1e293b",
-	},
-	avatarGlow: {
-		width: 92,
-		height: 92,
-		borderRadius: 46,
-		backgroundColor: "#1e293b",
-		borderWidth: 3,
-		borderColor: "#3396ff",
-		justifyContent: "center",
-		alignItems: "center",
-		shadowColor: "#3396ff",
-		shadowOffset: { width: 0, height: 0 },
-		shadowOpacity: 0.4,
-		shadowRadius: 16,
-		elevation: 8,
-	},
-	avatar: { width: 84, height: 84, borderRadius: 42 },
-	avatarFallback: {
-		width: 84,
-		height: 84,
-		borderRadius: 42,
-		backgroundColor: "#334155",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	avatarInitial: { color: "#fff", fontSize: 32, fontWeight: "700" },
-	displayName: {
-		color: "#fff",
-		fontSize: 22,
-		fontWeight: "700",
-		marginTop: 14,
-	},
-	email: { color: "#64748b", fontSize: 14, marginTop: 4 },
-	memberSince: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 6,
-		marginTop: 8,
-	},
-	memberSinceText: { color: "#64748b", fontSize: 12 },
-	statsGrid: {
-		flexDirection: "row",
-		flexWrap: "wrap",
-		paddingHorizontal: 12,
-		paddingTop: 20,
-		gap: 10,
-	},
-	statCard: {
-		flex: 1,
-		minWidth: "44%",
-		backgroundColor: "#0f172a",
-		borderRadius: 14,
-		borderWidth: 1,
-		borderColor: "#1e293b",
-		paddingVertical: 16,
-		paddingHorizontal: 12,
-		alignItems: "center",
-		gap: 4,
-	},
-	statValue: { fontSize: 24, fontWeight: "800" },
-	statLabel: {
-		color: "#64748b",
-		fontSize: 11,
-		fontWeight: "600",
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-	},
-	sectionHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 8,
-		paddingHorizontal: 16,
-		marginTop: 24,
-		marginBottom: 12,
-	},
-	sectionTitle: { color: "#fff", fontSize: 17, fontWeight: "700", flex: 1 },
-	badge: {
-		backgroundColor: "#0c2d5a",
-		borderRadius: 12,
-		paddingHorizontal: 10,
-		paddingVertical: 3,
-	},
-	badgeText: { color: "#3396ff", fontSize: 12, fontWeight: "700" },
-	comingSoon: {
-		backgroundColor: "#422006",
-		borderRadius: 12,
-		paddingHorizontal: 10,
-		paddingVertical: 3,
-	},
-	comingSoonText: { color: "#f59e0b", fontSize: 11, fontWeight: "700" },
-	activityCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#0f172a",
-		marginHorizontal: 16,
-		marginBottom: 10,
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#1e293b",
-		overflow: "hidden",
-	},
-	activityIndicator: {
-		width: 4,
-		alignSelf: "stretch",
-		backgroundColor: "#3396ff",
-	},
+	loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#D8CFC0" },
+	loadingText: { color: "#526168", marginTop: 12, fontSize: 14, fontFamily: "Inter_400Regular" },
+	errorText: { color: "#ba1a1a", marginTop: 12, fontSize: 16 },
+	retryButton: { marginTop: 16, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: "#E2DACF", borderRadius: 8 },
+	retryText: { color: "#221d18", fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+	header: { alignItems: "center", paddingTop: 32, paddingBottom: 24 },
+	avatarGlow: { width: 128, height: 128, borderRadius: 64, backgroundColor: "#38322C", justifyContent: "center", alignItems: "center", shadowColor: "rgba(56,50,44,0.2)", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 1, shadowRadius: 24, elevation: 8 },
+	avatar: { width: 120, height: 120, borderRadius: 60 },
+	avatarFallback: { width: 120, height: 120, borderRadius: 60, backgroundColor: "#38322C", justifyContent: "center", alignItems: "center" },
+	avatarInitial: { color: "#D8CFC0", fontSize: 48, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
+	displayName: { color: "#221d18", fontSize: 32, fontWeight: "600", marginTop: 16, fontFamily: "PlusJakartaSans_600SemiBold" },
+	email: { color: "#526168", fontSize: 16, marginTop: 4, fontFamily: "Inter_400Regular" },
+	memberSince: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 },
+	memberSinceText: { color: "#7e766e", fontSize: 12, fontFamily: "Inter_500Medium", textTransform: "uppercase", letterSpacing: 1.5 },
+	statsGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: 16, paddingTop: 20, gap: 12 },
+	statCard: { flex: 1, minWidth: "44%", backgroundColor: "#E2DACF", borderRadius: 16, paddingVertical: 20, paddingHorizontal: 16, alignItems: "center", gap: 8, shadowColor: "rgba(56,50,44,0.05)", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 1, shadowRadius: 8, elevation: 2 },
+	statValue: { fontSize: 24, fontWeight: "600", fontFamily: "PlusJakartaSans_600SemiBold", color: "#221d18" },
+	statLabel: { color: "#526168", fontSize: 12, fontWeight: "500", textTransform: "uppercase", letterSpacing: 0.5, fontFamily: "Inter_500Medium" },
+	sectionHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, marginTop: 28, marginBottom: 12 },
+	sectionTitle: { color: "#221d18", fontSize: 24, fontWeight: "600", flex: 1, fontFamily: "PlusJakartaSans_600SemiBold" },
+	badge: { backgroundColor: "rgba(199,145,82,0.1)", borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 4 },
+	badgeText: { color: "#c79152", fontSize: 12, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+	activityCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#E2DACF", marginHorizontal: 16, marginBottom: 10, borderRadius: 12, borderWidth: 1, borderColor: "rgba(82,97,104,0.1)", overflow: "hidden" },
+	activityIndicator: { width: 4, alignSelf: "stretch", backgroundColor: "#c79152" },
 	activityInfo: { flex: 1, paddingVertical: 14, paddingHorizontal: 14 },
-	activityActions: {
-		paddingRight: 14,
-		paddingVertical: 12,
-		alignItems: "flex-end",
-		gap: 8,
-	},
-	activityTitle: { color: "#e2e8f0", fontSize: 15, fontWeight: "600" },
-	activityMeta: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 5,
-		marginTop: 5,
-	},
-	activityTime: { color: "#64748b", fontSize: 12 },
-	activitySubtext: { color: "#475569", fontSize: 12, marginTop: 6 },
-	statusBadge: {
-		marginRight: 14,
-		borderRadius: 6,
-		paddingHorizontal: 8,
-		paddingVertical: 4,
-	},
-	compactStatusBadge: {
-		marginRight: 0,
-	},
-	statusUpcoming: { backgroundColor: "#0c2d5a" },
-	statusPast: { backgroundColor: "#1e1b4b" },
-	statusText: { color: "#3396ff", fontSize: 10, fontWeight: "700" },
-	endButton: {
-		minWidth: 72,
-		alignItems: "center",
-		justifyContent: "center",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		backgroundColor: "#7f1d1d",
-	},
-	endButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-	cancelButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		backgroundColor: "#7f1d1d",
-	},
-	cancelButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-	goLiveButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		backgroundColor: "#10b981",
-	},
-	goLiveButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-	leaveButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 8,
-		backgroundColor: "#7f1d1d",
-	},
-	leaveButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-	checkInButton: {
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-		borderRadius: 8,
-		backgroundColor: "#10b981",
-	},
-	checkInButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-	checkedInButton: {
-		paddingHorizontal: 10,
-		paddingVertical: 8,
-		borderRadius: 8,
-		backgroundColor: "#475569",
-	},
-	checkedInButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700" },
-	emptyState: {
-		alignItems: "center",
-		paddingVertical: 28,
-		marginHorizontal: 16,
-		backgroundColor: "#0f172a",
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#1e293b",
-	},
-	emptyText: {
-		color: "#475569",
-		fontSize: 14,
-		fontWeight: "600",
-		marginTop: 8,
-	},
-	emptySubtext: { color: "#334155", fontSize: 12, marginTop: 4 },
-	logoutButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		gap: 8,
-		marginHorizontal: 16,
-		marginTop: 32,
-		paddingVertical: 14,
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#7f1d1d",
-		backgroundColor: "#1a0a0a",
-	},
-	logoutText: { color: "#ef4444", fontSize: 16, fontWeight: "600" },
-	addFriendButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 4,
-		backgroundColor: "#0c2d5a",
-		paddingHorizontal: 10,
-		paddingVertical: 4,
-		borderRadius: 12,
-	},
-	addFriendText: { color: "#3396ff", fontSize: 12, fontWeight: "600" },
-	friendsSection: {
-		marginBottom: 12,
-	},
-	friendsSectionTitle: {
-		color: "#64748b",
-		fontSize: 12,
-		fontWeight: "600",
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
-		marginLeft: 16,
-		marginBottom: 8,
-	},
-	friendCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		backgroundColor: "#0f172a",
-		marginHorizontal: 16,
-		marginBottom: 8,
-		padding: 12,
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#1e293b",
-	},
-	friendAvatar: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-	},
-	friendAvatarPlaceholder: {
-		width: 40,
-		height: 40,
-		borderRadius: 20,
-		backgroundColor: "#334155",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	friendAvatarText: {
-		color: "#fff",
-		fontSize: 16,
-		fontWeight: "600",
-	},
-	friendInfo: {
-		flex: 1,
-		marginLeft: 12,
-	},
-	friendName: {
-		color: "#e2e8f0",
-		fontSize: 14,
-		fontWeight: "600",
-	},
-	friendTrust: {
-		color: "#64748b",
-		fontSize: 12,
-		marginTop: 2,
-	},
-	friendActions: {
-		flexDirection: "row",
-		gap: 8,
-	},
-	acceptButton: {
-		width: 32,
-		height: 32,
-		borderRadius: 16,
-		backgroundColor: "#10b981",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	rejectButton: {
-		width: 32,
-		height: 32,
-		borderRadius: 16,
-		backgroundColor: "#ef4444",
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	removeButton: {
-		paddingHorizontal: 12,
-		paddingVertical: 6,
-		backgroundColor: "#7f1d1d",
-		borderRadius: 6,
-	},
-	removeButtonText: {
-		color: "#fff",
-		fontSize: 12,
-		fontWeight: "600",
-	},
-	addButton: {
-		paddingHorizontal: 14,
-		paddingVertical: 6,
-		backgroundColor: "#3396ff",
-		borderRadius: 6,
-	},
-	addButtonText: {
-		color: "#fff",
-		fontSize: 12,
-		fontWeight: "600",
-	},
-	modalOverlay: {
-		flex: 1,
-		backgroundColor: "rgba(0, 0, 0, 0.7)",
-		justifyContent: "flex-end",
-	},
-	modalContent: {
-		backgroundColor: "#0f172a",
-		borderTopLeftRadius: 20,
-		borderTopRightRadius: 20,
-		paddingBottom: 40,
-		maxHeight: "80%",
-	},
-	modalHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		padding: 16,
-		borderBottomWidth: 1,
-		borderBottomColor: "#1e293b",
-	},
-	modalTitle: {
-		color: "#fff",
-		fontSize: 18,
-		fontWeight: "700",
-	},
-	searchInput: {
-		margin: 16,
-		padding: 12,
-		backgroundColor: "#1e293b",
-		borderRadius: 8,
-		color: "#fff",
-		fontSize: 14,
-	},
-	searchLoading: {
-		padding: 16,
-		alignItems: "center",
-	},
-	searchResultItem: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
-		borderBottomColor: "#1e293b",
-	},
-	noResultsText: {
-		color: "#64748b",
-		textAlign: "center",
-		padding: 20,
-	},
-	guestContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#080e1f',
-        padding: 32,
-    },
-    guestTitle: {
-        color: '#fff',
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 24,
-    },
-    guestSubtitle: {
-        color: '#94a3b8',
-        fontSize: 15,
-        textAlign: 'center',
-        marginTop: 12,
-        marginBottom: 32,
-        lineHeight: 22,
-    },
-    guestButton: {
-        backgroundColor: '#3396ff',
-        paddingHorizontal: 32,
-        paddingVertical: 14,
-        borderRadius: 12,
-        width: '100%',
-        alignItems: 'center',
-    },
-    guestButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
+	activityActions: { paddingRight: 14, paddingVertical: 12, alignItems: "flex-end", gap: 8 },
+	activityTitle: { color: "#221d18", fontSize: 15, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+	activityMeta: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 5 },
+	activityTime: { color: "#526168", fontSize: 12, fontFamily: "Inter_400Regular" },
+	activitySubtext: { color: "#7e766e", fontSize: 12, marginTop: 6, fontFamily: "Inter_400Regular" },
+	statusBadge: { marginRight: 14, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+	compactStatusBadge: { marginRight: 0 },
+	statusUpcoming: { backgroundColor: "rgba(199,145,82,0.1)" },
+	statusPast: { backgroundColor: "rgba(76,44,0,0.08)" },
+	statusText: { color: "#c79152", fontSize: 10, fontWeight: "700", fontFamily: "Inter_700Bold" },
+	endButton: { minWidth: 72, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: "#c79152" },
+	endButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700", fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 1.5 },
+	cancelButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: "#221d18" },
+	cancelButtonText: { color: "#D8CFC0", fontSize: 12, fontWeight: "700", fontFamily: "Inter_700Bold", textTransform: "uppercase", letterSpacing: 1.5 },
+	goLiveButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: "#c79152" },
+	goLiveButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700", fontFamily: "Inter_700Bold" },
+	leaveButton: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: "#ba1a1a" },
+	leaveButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700", fontFamily: "Inter_700Bold" },
+	checkInButton: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: "#c79152" },
+	checkInButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700", fontFamily: "Inter_700Bold" },
+	checkedInButton: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: "#7e766e" },
+	checkedInButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "700", fontFamily: "Inter_700Bold" },
+	emptyState: { alignItems: "center", paddingVertical: 28, marginHorizontal: 16, backgroundColor: "#E2DACF", borderRadius: 12, borderWidth: 1, borderColor: "rgba(82,97,104,0.1)" },
+	emptyText: { color: "#526168", fontSize: 14, fontWeight: "600", marginTop: 8, fontFamily: "Inter_600SemiBold" },
+	emptySubtext: { color: "#7e766e", fontSize: 12, marginTop: 4, fontFamily: "Inter_400Regular" },
+	logoutButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginHorizontal: 16, marginTop: 32, paddingVertical: 14, borderRadius: 12, borderWidth: 1.5, borderColor: "#ba1a1a", backgroundColor: "rgba(186,26,26,0.05)" },
+	logoutText: { color: "#ba1a1a", fontSize: 16, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+	addFriendButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(199,145,82,0.1)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+	addFriendText: { color: "#c79152", fontSize: 12, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+	friendsSection: { marginBottom: 12 },
+	friendsSectionTitle: { color: "#7e766e", fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5, marginLeft: 16, marginBottom: 8, fontFamily: "Inter_600SemiBold" },
+	friendCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#E2DACF", marginHorizontal: 16, marginBottom: 8, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(82,97,104,0.1)" },
+	friendAvatar: { width: 40, height: 40, borderRadius: 20 },
+	friendAvatarPlaceholder: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#38322C", justifyContent: "center", alignItems: "center" },
+	friendAvatarText: { color: "#D8CFC0", fontSize: 16, fontWeight: "600" },
+	friendInfo: { flex: 1, marginLeft: 12 },
+	friendName: { color: "#221d18", fontSize: 14, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+	friendTrust: { color: "#526168", fontSize: 12, marginTop: 2, fontFamily: "Inter_400Regular" },
+	friendActions: { flexDirection: "row", gap: 8 },
+	acceptButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#c79152", justifyContent: "center", alignItems: "center" },
+	rejectButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#ba1a1a", justifyContent: "center", alignItems: "center" },
+	removeButton: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: "#ba1a1a", borderRadius: 6 },
+	removeButtonText: { color: "#fff", fontSize: 12, fontWeight: "600" },
+	addButton: { paddingHorizontal: 14, paddingVertical: 6, backgroundColor: "#221d18", borderRadius: 6 },
+	addButtonText: { color: "#D8CFC0", fontSize: 12, fontWeight: "600" },
+	modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+	modalContent: { backgroundColor: "#E2DACF", borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 40, maxHeight: "80%" },
+	modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(56,50,44,0.1)" },
+	modalTitle: { color: "#221d18", fontSize: 18, fontWeight: "700", fontFamily: "PlusJakartaSans_700Bold" },
+	searchInput: { margin: 16, padding: 12, backgroundColor: "#D8CFC0", borderRadius: 8, color: "#221d18", fontSize: 14, borderWidth: 1, borderColor: "rgba(82,97,104,0.2)", fontFamily: "Inter_400Regular" },
+	searchLoading: { padding: 16, alignItems: "center" },
+	searchResultItem: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "rgba(56,50,44,0.1)" },
+	noResultsText: { color: "#526168", textAlign: "center", padding: 20, fontFamily: "Inter_400Regular" },
+	guestContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#D8CFC0", padding: 32 },
+	guestTitle: { color: "#221d18", fontSize: 24, fontWeight: "600", marginTop: 24, fontFamily: "PlusJakartaSans_600SemiBold" },
+	guestSubtitle: { color: "#4c463f", fontSize: 16, textAlign: "center", marginTop: 12, marginBottom: 32, lineHeight: 24, fontFamily: "Inter_400Regular" },
+	guestButton: { backgroundColor: "#221d18", paddingHorizontal: 32, paddingVertical: 16, borderRadius: 12, width: "100%", alignItems: "center" },
+	guestButtonText: { color: "#D8CFC0", fontSize: 14, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
 });
+
