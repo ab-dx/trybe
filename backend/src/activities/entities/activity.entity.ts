@@ -27,7 +27,7 @@ export enum ActivityStatus {
 export enum Visibility {
 	PUBLIC = "PUBLIC",
 	FRIENDS = "FRIENDS",
-	INVITE_ONLY = "INVITE_ONLY",
+	PRIVATE = "PRIVATE",
 }
 
 @Entity("activities")
@@ -72,12 +72,21 @@ export class Activity {
 	@CreateDateColumn()
 	createdAt: Date;
 
-	@OneToMany(() => Rsvp, (rsvp) => rsvp.activity)
+	@OneToMany(
+		() => Rsvp,
+		(rsvp) => rsvp.activity,
+	)
 	rsvps: Rsvp[];
 
-	@OneToMany(() => ActivityHype, (hype) => hype.activity)
+	@OneToMany(
+		() => ActivityHype,
+		(hype) => hype.activity,
+	)
 	hypes: ActivityHype[];
 
-	@OneToMany(() => Message, (message) => message.activity)
+	@OneToMany(
+		() => Message,
+		(message) => message.activity,
+	)
 	messages: Message[];
 }
