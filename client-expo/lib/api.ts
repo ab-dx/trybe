@@ -88,6 +88,32 @@ export async function checkInToActivity(activityId: string, latitude: number, lo
   return res.json();
 }
 
+export function hypeActivity(activityId: string) {
+  return authFetch(`/activities/${activityId}/hype`, {
+    method: 'POST',
+  });
+}
+
+export function unhypeActivity(activityId: string) {
+  return authFetch(`/activities/${activityId}/hype`, {
+    method: 'DELETE',
+  });
+}
+
+export async function fetchHypeStatus(activityId: string) {
+  return authFetch(`/activities/${activityId}/hype`);
+}
+
+export async function fetchHypeStatuses(activityIds: string[]) {
+  const promises = activityIds.map((id) => fetchHypeStatus(id).catch(() => ({ isHyped: false })));
+  const results = await Promise.all(promises);
+  const statuses: Record<string, boolean> = {};
+  activityIds.forEach((id, index) => {
+    statuses[id] = results[index].isHyped;
+  });
+  return statuses;
+}
+
 export function searchUsers(query: string) {
   return authFetch(`/friends/search?q=${encodeURIComponent(query)}`);
 }

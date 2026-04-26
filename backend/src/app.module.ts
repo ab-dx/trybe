@@ -7,6 +7,7 @@ import { ActivitiesModule } from './activities/activities.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { ChatModule } from './chat/chat.module';
 import { FriendsModule } from './friends/friends.module';
+import { ActivityHypeModule } from './activity-hype/activity-hype.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { FriendsModule } from './friends/friends.module';
     RsvpModule,
     ChatModule,
     FriendsModule,
+    ActivityHypeModule,
   ],
 })
 export class AppModule {}

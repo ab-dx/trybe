@@ -11,7 +11,15 @@ import {
 } from "react-native";
 import { ActivityCard, ActivityProps } from "../components/ActivityCard";
 import { useAuth } from "../lib/auth/AuthContext";
-import { fetchProfile, fetchMyRsvps, joinActivity, fetchActivities } from "../lib/api";
+import { 
+	fetchProfile, 
+	fetchMyRsvps, 
+	joinActivity, 
+	fetchActivities,
+	hypeActivity,
+	unhypeActivity,
+	fetchHypeStatuses,
+} from "../lib/api";
 
 const API_URL =
 	process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
@@ -33,6 +41,8 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	const [friendsOnly, setFriendsOnly] = useState(false);
 
 	const [rsvpedActivityIds, setRsvpedActivityIds] = useState<string[]>([]);
+	const [hypedActivityIds, setHypedActivityIds] = useState<Record<string, boolean>>({});
+	const [hypeLoadingId, setHypeLoadingId] = useState<string | null>(null);
 	const [joiningActivityId, setJoiningActivityId] = useState<string | null>(
 		null,
 	);
@@ -67,6 +77,7 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 		try {
 			const data = await fetchActivities(undefined, friendsOnly);
 			setActivities(data);
+			return data;
 		} catch (error) {
 			console.error("Error fetching feed:", error);
 		} finally {
@@ -75,16 +86,31 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 		}
 	}, [friendsOnly]);
 
+	const fetchUserHypeStatuses = async (activityList: ActivityProps[]) => {
+		if (!user || activityList.length === 0) return;
+		const ids = activityList.map((a) => a.id);
+		try {
+			const statuses = await fetchHypeStatuses(ids);
+			setHypedActivityIds(statuses);
+		} catch (error) {
+			console.error("Could not fetch hype statuses:", error);
+		}
+	};
+
 	useEffect(() => {
 		setLoading(true);
-		fetchFeed();
+		fetchFeed().then((activities) => {
+			fetchUserHypeStatuses(activities);
+		});
 		fetchUserRsvps();
 		fetchCurrentProfile();
 	}, [user, friendsOnly]);
 
 	const onRefresh = () => {
 		setRefreshing(true);
-		fetchFeed();
+		fetchFeed().then((activities) => {
+			fetchUserHypeStatuses(activities);
+		});
 		fetchUserRsvps();
 		fetchCurrentProfile();
 	};
@@ -115,6 +141,37 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 			);
 		} finally {
 			setJoiningActivityId(null); // Turn off the loading spinner
+		}
+	};
+
+	const handleHype = async (activityId: string) => {
+		if (!user) {
+			Alert.alert(
+				"Not logged in",
+				"You must be logged in to hype an activity.",
+			);
+			return;
+		}
+
+		setHypeLoadingId(activityId);
+
+		try {
+			const isCurrentlyHyped = hypedActivityIds[activityId];
+			if (isCurrentlyHyped) {
+				await unhypeActivity(activityId);
+				setHypedActivityIds((prev) => ({ ...prev, [activityId]: false }));
+			} else {
+				await hypeActivity(activityId);
+				setHypedActivityIds((prev) => ({ ...prev, [activityId]: true }));
+			}
+		} catch (error: any) {
+			console.error("Error toggling hype:", error);
+			Alert.alert(
+				"Could not update hype",
+				error.message || "An unexpected error occurred.",
+			);
+		} finally {
+			setHypeLoadingId(null);
 		}
 	};
 
@@ -183,7 +240,10 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 						isJoined={rsvpedActivityIds.includes(item.id)}
 						isHostedByMe={item.host?.id === currentProfileId}
 						isJoining={joiningActivityId === item.id}
+						isHyped={hypedActivityIds[item.id] || false}
+						isHypeLoading={hypeLoadingId === item.id}
 						onPressJoin={() => handleJoin(item.id)}
+						onPressHype={() => handleHype(item.id)}
 						onPressLocation={() => {
 							const [lng, lat] = item.location.coordinates;
 							onJumpToMap(lat, lng);

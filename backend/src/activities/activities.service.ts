@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Activity, ActivityStatus, Visibility } from './entities/activity.entity';
 import { Rsvp } from '../rsvp/entities/rsvp.entity';
+import { ActivityHype } from '../activity-hype/entities/activity-hype.entity';
 import { UsersService } from '../users/users.service';
 import { ENDED_ACTIVITY_STATUSES } from './activity.utils';
 import { FriendsService } from '../friends/friends.service';
@@ -97,6 +98,7 @@ export class ActivitiesService {
       .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .leftJoinAndSelect('activity.host', 'host')
       .loadRelationCountAndMap('activity.rsvpCount', 'activity.rsvps')
+      .loadRelationCountAndMap('activity.hypeCount', 'activity.hypes')
       .orderBy('activity.startTime', 'ASC');
 
     if (friendsOnly && userId) {
@@ -109,7 +111,14 @@ export class ActivitiesService {
       query.andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC });
     }
 
-    return query.getMany();
+    const activities = await query.getMany();
+    
+    // Sort in memory by hype count (descending)
+    return activities.sort((a, b) => {
+      const aCount = (a as any).hypeCount || 0;
+      const bCount = (b as any).hypeCount || 0;
+      return bCount - aCount;
+    });
   }
 
   async findUpcoming(userId?: string, friendsOnly: boolean = false): Promise<Activity[]> {
@@ -123,6 +132,7 @@ export class ActivitiesService {
       .andWhere('(activity.endTime IS NULL OR activity.endTime > :now)', { now })
       .leftJoinAndSelect('activity.host', 'host')
       .loadRelationCountAndMap('activity.rsvpCount', 'activity.rsvps')
+      .loadRelationCountAndMap('activity.hypeCount', 'activity.hypes')
       .orderBy('activity.startTime', 'ASC')
       .take(50);
 
@@ -136,7 +146,14 @@ export class ActivitiesService {
       query.andWhere('activity.visibility = :visibility', { visibility: Visibility.PUBLIC });
     }
 
-    return query.getMany();
+    const activities = await query.getMany();
+    
+    // Sort in memory by hype count (descending)
+    return activities.sort((a, b) => {
+      const aCount = (a as any).hypeCount || 0;
+      const bCount = (b as any).hypeCount || 0;
+      return bCount - aCount;
+    });
   }
 
   async findLive(): Promise<Activity[]> {

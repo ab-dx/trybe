@@ -10,6 +10,7 @@ import {
 import { User } from "../../users/entities/user.entity";
 import { Rsvp } from "../../rsvp/entities/rsvp.entity";
 import { Message } from "../../chat/entities/message.entity";
+import { ActivityHype } from "../../activity-hype/entities/activity-hype.entity";
 type Point = {
 	type: "Point";
 	coordinates: [number, number];
@@ -73,6 +74,9 @@ export class Activity {
 
 	@OneToMany(() => Rsvp, (rsvp) => rsvp.activity)
 	rsvps: Rsvp[];
+
+	@OneToMany(() => ActivityHype, (hype) => hype.activity)
+	hypes: ActivityHype[];
 
 	@OneToMany(() => Message, (message) => message.activity)
 	messages: Message[];

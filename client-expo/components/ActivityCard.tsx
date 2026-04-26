@@ -42,18 +42,24 @@ export interface ActivityCardProps {
 	activity: ActivityProps;
 	onPressLocation: () => void;
 	onPressJoin: () => void;
-	isJoined?: boolean; // NEW: Tells the card if the user is already RSVP'd
-	isJoining?: boolean; // NEW: Prevents spam clicks while the network request is inflight
+	onPressHype: () => void;
+	isJoined?: boolean;
+	isJoining?: boolean;
 	isHostedByMe?: boolean;
+	isHyped?: boolean;
+	isHypeLoading?: boolean;
 }
 
 export const ActivityCard: React.FC<ActivityCardProps> = ({
 	activity,
 	onPressLocation,
 	onPressJoin,
-	isJoined = false, // Default to false if not provided
+	onPressHype,
+	isJoined = false,
 	isJoining = false,
 	isHostedByMe = false,
+	isHyped = false,
+	isHypeLoading = false,
 }) => {
 	const [address, setAddress] = useState<string>("Locating...");
 
@@ -171,8 +177,19 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 				</View>
 
 				<View style={styles.actionContainer}>
-					<TouchableOpacity style={styles.hypeButton} activeOpacity={0.7}>
-						<Text style={styles.hypeButtonText}>🔥 Hype</Text>
+					<TouchableOpacity
+						style={[styles.hypeButton, isHyped && styles.hypedButton]}
+						activeOpacity={0.7}
+						onPress={onPressHype}
+						disabled={isHypeLoading}
+					>
+						{isHypeLoading ? (
+							<ActivityIndicator size="small" color="#ffffff" />
+						) : (
+							<Text style={styles.hypeButtonText}>
+								{isHyped ? '🔥 Hyped' : '🔥 Hype'}
+							</Text>
+						)}
 					</TouchableOpacity>
 
 					{/* NEW: Dynamic Join Button */}
@@ -336,6 +353,13 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		borderRadius: 20,
 		marginRight: 8,
+		minWidth: 70,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	hypedButton: {
+		backgroundColor: "#475569",
+		borderWidth: 0,
 	},
 	hypeButtonText: {
 		color: "#818cf8",
