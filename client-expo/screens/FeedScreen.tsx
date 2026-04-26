@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
 	View,
 	Text,
@@ -7,10 +7,11 @@ import {
 	RefreshControl,
 	StyleSheet,
 	Alert,
+	TouchableOpacity,
 } from "react-native";
 import { ActivityCard, ActivityProps } from "../components/ActivityCard";
 import { useAuth } from "../lib/auth/AuthContext";
-import { fetchProfile, fetchMyRsvps, joinActivity } from "../lib/api";
+import { fetchProfile, fetchMyRsvps, joinActivity, fetchActivities } from "../lib/api";
 
 const API_URL =
 	process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
@@ -29,15 +30,14 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	const [activities, setActivities] = useState<ActivityProps[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
+	const [friendsOnly, setFriendsOnly] = useState(false);
 
-	// --- NEW: RSVP State Management ---
 	const [rsvpedActivityIds, setRsvpedActivityIds] = useState<string[]>([]);
 	const [joiningActivityId, setJoiningActivityId] = useState<string | null>(
 		null,
 	);
 	const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
 
-	// Fetch the user's existing RSVPs so buttons stay accurate on reload
 	const fetchUserRsvps = async () => {
 		if (!user) return;
 		try {
@@ -63,22 +63,9 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 		}
 	};
 
-	const fetchFeed = async () => {
+	const fetchFeed = useCallback(async () => {
 		try {
-			const queryParams = "?minLat=00.0&maxLat=90.0&minLng=00.0&maxLng=180.0";
-
-			const response = await fetch(`${API_URL}/activities${queryParams}`, {
-				method: "GET",
-				headers: {
-					"Content-Type": "application/json",
-				},
-			});
-
-			if (!response.ok) {
-				throw new Error(`Failed to fetch: ${response.status}`);
-			}
-
-			const data = await response.json();
+			const data = await fetchActivities(undefined, friendsOnly);
 			setActivities(data);
 		} catch (error) {
 			console.error("Error fetching feed:", error);
@@ -86,14 +73,14 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 			setLoading(false);
 			setRefreshing(false);
 		}
-	};
+	}, [friendsOnly]);
 
-	// Load Feed and RSVPs concurrently
 	useEffect(() => {
+		setLoading(true);
 		fetchFeed();
 		fetchUserRsvps();
 		fetchCurrentProfile();
-	}, [user]); // Re-run if user auth state changes
+	}, [user, friendsOnly]);
 
 	const onRefresh = () => {
 		setRefreshing(true);
@@ -142,8 +129,48 @@ export const FeedScreen: React.FC<FeedScreenProps> = ({ onJumpToMap }) => {
 	return (
 		<View style={styles.container}>
 			<View style={styles.headerContainer}>
-				<Text style={styles.headerTitle}>The Feed</Text>
-				<Text style={styles.headerSubtitle}>See what the Trybe is up to.</Text>
+				<View style={styles.titleRow}>
+					<Text style={styles.headerTitle}>The Feed</Text>
+					<View style={styles.filterToggle}>
+						<TouchableOpacity
+							style={[
+								styles.filterButton,
+								!friendsOnly && styles.filterButtonActive,
+							]}
+							onPress={() => setFriendsOnly(false)}
+						>
+							<Text
+								style={[
+									styles.filterButtonText,
+									!friendsOnly && styles.filterButtonTextActive,
+								]}
+							>
+								All
+							</Text>
+						</TouchableOpacity>
+						<TouchableOpacity
+							style={[
+								styles.filterButton,
+								friendsOnly && styles.filterButtonActive,
+							]}
+							onPress={() => setFriendsOnly(true)}
+						>
+							<Text
+								style={[
+									styles.filterButtonText,
+									friendsOnly && styles.filterButtonTextActive,
+								]}
+							>
+								Friends
+							</Text>
+						</TouchableOpacity>
+					</View>
+				</View>
+				<Text style={styles.headerSubtitle}>
+					{friendsOnly
+						? "See what your friends are up to."
+						: "See what the Trybe is up to."}
+				</Text>
 			</View>
 
 			<FlatList
@@ -198,6 +225,11 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		marginBottom: 16,
 	},
+	titleRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+	},
 	headerTitle: {
 		color: "#ffffff",
 		fontSize: 30,
@@ -208,6 +240,28 @@ const styles = StyleSheet.create({
 		color: "#94a3b8",
 		fontSize: 14,
 		marginTop: 4,
+	},
+	filterToggle: {
+		flexDirection: "row",
+		backgroundColor: "#1e293b",
+		borderRadius: 8,
+		padding: 2,
+	},
+	filterButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 6,
+	},
+	filterButtonActive: {
+		backgroundColor: "#3396ff",
+	},
+	filterButtonText: {
+		color: "#64748b",
+		fontSize: 13,
+		fontWeight: "600",
+	},
+	filterButtonTextActive: {
+		color: "#ffffff",
 	},
 	listContent: {
 		paddingBottom: 100,

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import MapView, { Marker, UrlTile, Region, Callout } from "react-native-maps";
 import * as Location from "expo-location";
+import { auth } from "../lib/firebase";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://10.112.219.33:3000";
 const ZOOM_THRESHOLD = 0.15;
@@ -23,7 +24,11 @@ interface Activity {
 	type?: string;
 }
 
-export default function RadarMap() {
+interface RadarMapProps {
+	friendsOnly?: boolean;
+}
+
+export default function RadarMap({ friendsOnly = false }: RadarMapProps) {
 	const mapRef = useRef<MapView>(null);
 	const [activities, setActivities] = useState<any[]>([]);
 	const [isFetching, setIsFetching] = useState(false);
@@ -58,7 +63,6 @@ export default function RadarMap() {
 		})();
 	}, []);
 
-	// 2. Fetch Activities Based on Map Viewport
 	const fetchActivitiesInBounds = useCallback(async (region: Region) => {
 		if (region.latitudeDelta > ZOOM_THRESHOLD) {
 			setIsZoomedOut(true);
@@ -75,21 +79,33 @@ export default function RadarMap() {
 		const maxLng = region.longitude + region.longitudeDelta / 2;
 
 		try {
-			const response = await fetch(
-				`${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`,
-			);
+			const user = auth.currentUser;
+			const headers: Record<string, string> = {
+				"Content-Type": "application/json",
+			};
+
+			if (user) {
+				const token = await user.getIdToken();
+				headers["Authorization"] = `Bearer ${token}`;
+			}
+
+			let url = `${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`;
+			if (friendsOnly) {
+				url += "&friendsOnly=true";
+			}
+
+			const response = await fetch(url, { headers });
 
 			if (!response.ok) throw new Error("Failed to fetch activities");
 
 			const data = await response.json();
 			setActivities(data);
-			console.log(JSON.stringify(data));
 		} catch (error) {
 			console.error("Radar Error:", error);
 		} finally {
 			setIsFetching(false);
 		}
-	}, []);
+	}, [friendsOnly]);
 
 	return (
 		<View style={styles.container}>

@@ -20,7 +20,7 @@ export interface ActivityProps {
 	};
 	host: {
 		id: string;
-		username?: string;
+		email?: string;
 		displayName?: string;
 		trustScore?: number;
 	};
@@ -94,7 +94,7 @@ export const ActivityCard: React.FC<ActivityCardProps> = ({
 	});
 
 	const hostDisplayName =
-		activity.host?.username || activity.host?.displayName || "Unknown Host";
+		activity.host?.displayName || activity.host?.email?.split('@')[0] || "Unknown Host";
 	const joinButtonDisabled = isHostedByMe || isJoined || isJoining;
 	const joinButtonLabel = isHostedByMe
 		? "Hosting"

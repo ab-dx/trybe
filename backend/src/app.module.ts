@@ -6,6 +6,7 @@ import { UsersModule } from './users/users.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { ChatModule } from './chat/chat.module';
+import { FriendsModule } from './friends/friends.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ChatModule } from './chat/chat.module';
     ActivitiesModule,
     RsvpModule,
     ChatModule,
+    FriendsModule,
   ],
 })
 export class AppModule {}

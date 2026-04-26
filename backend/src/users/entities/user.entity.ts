@@ -4,9 +4,12 @@ import {
   Column,
   CreateDateColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Activity } from '../../activities/entities/activity.entity';
 import { Rsvp } from '../../rsvp/entities/rsvp.entity';
+import { FriendRequest, FriendRequestStatus } from '../../friends/entities/friend-request.entity';
 
 @Entity('users')
 export class User {
@@ -36,4 +39,10 @@ export class User {
 
   @OneToMany(() => Rsvp, (rsvp) => rsvp.user)
   rsvps: Rsvp[];
+
+  @OneToMany(() => FriendRequest, (fr) => fr.requester)
+  sentFriendRequests: FriendRequest[];
+
+  @OneToMany(() => FriendRequest, (fr) => fr.receiver)
+  receivedFriendRequests: FriendRequest[];
 }

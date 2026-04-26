@@ -47,3 +47,85 @@ export function endHostedActivity(activityId: string) {
     method: 'PATCH',
   });
 }
+
+export function searchUsers(query: string) {
+  return authFetch(`/friends/search?q=${encodeURIComponent(query)}`);
+}
+
+export function sendFriendRequest(userId: string) {
+  return authFetch(`/friends/request/${userId}`, {
+    method: 'POST',
+  });
+}
+
+export function acceptFriendRequest(requestId: string) {
+  return authFetch(`/friends/accept/${requestId}`, {
+    method: 'POST',
+  });
+}
+
+export function rejectFriendRequest(requestId: string) {
+  return authFetch(`/friends/reject/${requestId}`, {
+    method: 'POST',
+  });
+}
+
+export function removeFriend(userId: string) {
+  return authFetch(`/friends/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
+export function fetchFriends() {
+  return authFetch('/friends');
+}
+
+export function fetchIncomingRequests() {
+  return authFetch('/friends/requests/incoming');
+}
+
+export function fetchOutgoingRequests() {
+  return authFetch('/friends/requests/outgoing');
+}
+
+export async function fetchActivities(
+  bounds?: { minLat: number; maxLat: number; minLng: number; maxLng: number },
+  friendsOnly: boolean = false,
+) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const token = await user.getIdToken();
+
+  let url = `${API_URL}/activities`;
+  const params = new URLSearchParams();
+
+  if (bounds) {
+    params.set('minLat', bounds.minLat.toString());
+    params.set('maxLat', bounds.maxLat.toString());
+    params.set('minLng', bounds.minLng.toString());
+    params.set('maxLng', bounds.maxLng.toString());
+  }
+
+  if (friendsOnly) {
+    params.set('friendsOnly', 'true');
+  }
+
+  if (params.toString()) {
+    url += '?' + params.toString();
+  }
+
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`API ${res.status}: ${body}`);
+  }
+
+  return res.json();
+}

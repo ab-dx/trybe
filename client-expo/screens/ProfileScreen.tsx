@@ -9,6 +9,9 @@ import {
 	ActivityIndicator,
 	RefreshControl,
 	Alert,
+	TextInput,
+	Modal,
+	FlatList,
 } from "react-native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { useAuth } from "../lib/auth/AuthContext";
@@ -17,7 +20,34 @@ import {
 	fetchMyHosted,
 	fetchMyRsvps,
 	fetchProfile,
+	fetchFriends,
+	fetchIncomingRequests,
+	fetchOutgoingRequests,
+	searchUsers,
+	sendFriendRequest,
+	acceptFriendRequest,
+	rejectFriendRequest,
+	removeFriend,
 } from "../lib/api";
+
+interface UserItem {
+	id: string;
+	displayName?: string;
+	email?: string;
+	avatarUrl?: string;
+	trustScore: number;
+	friendStatus?: "none" | "pending" | "outgoing" | "friends";
+}
+
+interface FriendRequestItem {
+	id: string;
+	requesterId: string;
+	receiverId: string;
+	status: string;
+	requester?: UserItem;
+	receiver?: UserItem;
+	createdAt: string;
+}
 
 interface ActivityItem {
 	id: string;
@@ -117,6 +147,15 @@ export const ProfileScreen: React.FC = () => {
 	const [endingActivityId, setEndingActivityId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
+	const [friends, setFriends] = useState<UserItem[]>([]);
+	const [incomingRequests, setIncomingRequests] = useState<FriendRequestItem[]>([]);
+	const [outgoingRequests, setOutgoingRequests] = useState<FriendRequestItem[]>([]);
+	const [showSearchModal, setShowSearchModal] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [searchResults, setSearchResults] = useState<UserItem[]>([]);
+	const [searching, setSearching] = useState(false);
+	const [loadingFriends, setLoadingFriends] = useState(false);
+
 	const loadProfileData = useCallback(async () => {
 		try {
 			setError(null);
@@ -152,6 +191,17 @@ export const ProfileScreen: React.FC = () => {
 					),
 			);
 			setPastActivities(buildPastActivities(hostedActivities, rsvps));
+
+			setLoadingFriends(true);
+			const [friendsData, incomingData, outgoingData] = await Promise.all([
+				fetchFriends(),
+				fetchIncomingRequests(),
+				fetchOutgoingRequests(),
+			]);
+			setFriends(friendsData);
+			setIncomingRequests(incomingData);
+			setOutgoingRequests(outgoingData);
+			setLoadingFriends(false);
 		} catch (err: any) {
 			setError("Could not load profile data");
 			console.error("Profile fetch error:", err);
@@ -207,6 +257,89 @@ export const ProfileScreen: React.FC = () => {
 				},
 			],
 		);
+	};
+
+	const handleSearchUsers = async (query: string) => {
+		setSearchQuery(query);
+		if (query.length < 2) {
+			setSearchResults([]);
+			return;
+		}
+		setSearching(true);
+		try {
+			const results = await searchUsers(query);
+			setSearchResults(results);
+		} catch (err: any) {
+			console.error("Search error:", err);
+		} finally {
+			setSearching(false);
+		}
+	};
+
+	const handleSendFriendRequest = async (userId: string) => {
+		try {
+			await sendFriendRequest(userId);
+			Alert.alert("Friend request sent!");
+			setShowSearchModal(false);
+			setSearchQuery("");
+			setSearchResults([]);
+			loadProfileData();
+		} catch (err: any) {
+			Alert.alert("Error", err.message || "Could not send friend request");
+		}
+	};
+
+	const handleAcceptRequest = async (requestId: string) => {
+		try {
+			await acceptFriendRequest(requestId);
+			loadProfileData();
+		} catch (err: any) {
+			Alert.alert("Error", err.message || "Could not accept request");
+		}
+	};
+
+	const handleRejectRequest = async (requestId: string) => {
+		try {
+			await rejectFriendRequest(requestId);
+			loadProfileData();
+		} catch (err: any) {
+			Alert.alert("Error", err.message || "Could not reject request");
+		}
+	};
+
+	const handleRemoveFriend = async (userId: string) => {
+		Alert.alert(
+			"Remove friend?",
+			"This will remove them from your friends list.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Remove",
+					style: "destructive",
+					onPress: async () => {
+						try {
+							await removeFriend(userId);
+							loadProfileData();
+						} catch (err: any) {
+							Alert.alert("Error", err.message || "Could not remove friend");
+						}
+					},
+				},
+			],
+		);
+	};
+
+	const getFriendStatusBadge = (status?: string) => {
+		switch (status) {
+			case "pending":
+				return { bg: "#422006", color: "#f59e0b", text: "Pending" };
+			case "outgoing":
+				return { bg: "#1e3a5f", color: "#3396ff", text: "Sent" };
+			case "friends":
+				return { bg: "#064e3b", color: "#10b981", text: "Friends" };
+			default:
+				return { bg: "#1e3a5f", color: "#3396ff", text: "Add" };
+		}
 	};
 
 	const getInitial = (name?: string | null) => {
@@ -520,17 +653,222 @@ export const ProfileScreen: React.FC = () => {
 			<View style={[styles.sectionHeader, { marginTop: 28 }]}>
 				<Feather name="users" size={18} color="#f59e0b" />
 				<Text style={styles.sectionTitle}>Friends</Text>
-				<View style={styles.comingSoon}>
-					<Text style={styles.comingSoonText}>Coming Soon</Text>
+				<TouchableOpacity
+					style={styles.addFriendButton}
+					onPress={() => setShowSearchModal(true)}
+				>
+					<Ionicons name="person-add-outline" size={14} color="#3396ff" />
+					<Text style={styles.addFriendText}>Add</Text>
+				</TouchableOpacity>
+			</View>
+
+			{loadingFriends ? (
+				<View style={styles.emptyState}>
+					<ActivityIndicator size="small" color="#3396ff" />
 				</View>
-			</View>
-			<View style={styles.emptyState}>
-				<Ionicons name="people-outline" size={36} color="#334155" />
-				<Text style={styles.emptyText}>Friends feature is on the way!</Text>
-				<Text style={styles.emptySubtext}>
-					You'll be able to follow and find friends here.
-				</Text>
-			</View>
+			) : (
+				<>
+					{incomingRequests.length > 0 && (
+						<View style={styles.friendsSection}>
+							<Text style={styles.friendsSectionTitle}>Requests</Text>
+							{incomingRequests.map((req) => (
+								<View key={req.id} style={styles.friendCard}>
+									{req.requester?.avatarUrl ? (
+										<Image
+											source={{ uri: req.requester.avatarUrl }}
+											style={styles.friendAvatar}
+										/>
+									) : (
+										<View style={styles.friendAvatarPlaceholder}>
+											<Text style={styles.friendAvatarText}>
+												{req.requester?.displayName?.charAt(0).toUpperCase() || "?"}
+											</Text>
+										</View>
+									)}
+									<View style={styles.friendInfo}>
+										<Text style={styles.friendName}>
+											{req.requester?.displayName || req.requester?.email || "Unknown"}
+										</Text>
+										<Text style={styles.friendTrust}>
+											Trust: {req.requester?.trustScore || 0}
+										</Text>
+									</View>
+									<View style={styles.friendActions}>
+										<TouchableOpacity
+											style={styles.acceptButton}
+											onPress={() => handleAcceptRequest(req.id)}
+										>
+											<Ionicons name="checkmark" size={16} color="#fff" />
+										</TouchableOpacity>
+										<TouchableOpacity
+											style={styles.rejectButton}
+											onPress={() => handleRejectRequest(req.id)}
+										>
+											<Ionicons name="close" size={16} color="#fff" />
+										</TouchableOpacity>
+									</View>
+								</View>
+							))}
+						</View>
+					)}
+
+					{outgoingRequests.length > 0 && (
+						<View style={styles.friendsSection}>
+							<Text style={styles.friendsSectionTitle}>Sent Requests</Text>
+							{outgoingRequests.map((req) => (
+								<View key={req.id} style={styles.friendCard}>
+									{req.receiver?.avatarUrl ? (
+										<Image
+											source={{ uri: req.receiver.avatarUrl }}
+											style={styles.friendAvatar}
+										/>
+									) : (
+										<View style={styles.friendAvatarPlaceholder}>
+											<Text style={styles.friendAvatarText}>
+												{req.receiver?.displayName?.charAt(0).toUpperCase() || "?"}
+											</Text>
+										</View>
+									)}
+									<View style={styles.friendInfo}>
+										<Text style={styles.friendName}>
+											{req.receiver?.displayName || req.receiver?.email || "Unknown"}
+										</Text>
+										<Text style={styles.friendTrust}>Pending...</Text>
+									</View>
+								</View>
+							))}
+						</View>
+					)}
+
+					{friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
+						<View style={styles.emptyState}>
+							<Ionicons name="people-outline" size={36} color="#334155" />
+							<Text style={styles.emptyText}>No friends yet</Text>
+							<Text style={styles.emptySubtext}>
+								Add friends to see their activities!
+							</Text>
+						</View>
+					) : (
+						<View style={styles.friendsSection}>
+							{friends.length > 0 && <Text style={styles.friendsSectionTitle}>My Friends</Text>}
+							{friends.map((friend) => (
+								<View key={friend.id} style={styles.friendCard}>
+									{friend.avatarUrl ? (
+										<Image source={{ uri: friend.avatarUrl }} style={styles.friendAvatar} />
+									) : (
+										<View style={styles.friendAvatarPlaceholder}>
+											<Text style={styles.friendAvatarText}>
+												{friend.displayName?.charAt(0).toUpperCase() || "?"}
+											</Text>
+										</View>
+									)}
+									<View style={styles.friendInfo}>
+										<Text style={styles.friendName}>
+											{friend.displayName || friend.email?.split('@')[0] || "Unknown"}
+										</Text>
+										<Text style={styles.friendTrust}>Trust: {friend.trustScore}</Text>
+									</View>
+									<TouchableOpacity
+										style={styles.removeButton}
+										onPress={() => handleRemoveFriend(friend.id)}
+									>
+										<Text style={styles.removeButtonText}>Remove</Text>
+									</TouchableOpacity>
+								</View>
+							))}
+						</View>
+					)}
+				</>
+			)}
+
+			<Modal
+				visible={showSearchModal}
+				animationType="slide"
+				transparent={true}
+				onRequestClose={() => setShowSearchModal(false)}
+			>
+				<View style={styles.modalOverlay}>
+					<View style={styles.modalContent}>
+						<View style={styles.modalHeader}>
+							<Text style={styles.modalTitle}>Find Friends</Text>
+							<TouchableOpacity onPress={() => setShowSearchModal(false)}>
+								<Ionicons name="close" size={24} color="#fff" />
+							</TouchableOpacity>
+						</View>
+						<TextInput
+							style={styles.searchInput}
+							placeholder="Search by email or name..."
+							placeholderTextColor="#64748b"
+							value={searchQuery}
+							onChangeText={handleSearchUsers}
+							autoCapitalize="none"
+							autoCorrect={false}
+						/>
+						{searching && (
+							<View style={styles.searchLoading}>
+								<ActivityIndicator size="small" color="#3396ff" />
+							</View>
+						)}
+						<FlatList
+							data={searchResults}
+							keyExtractor={(item) => item.id}
+							renderItem={({ item }) => (
+								<View style={styles.searchResultItem}>
+									{item.avatarUrl ? (
+										<Image source={{ uri: item.avatarUrl }} style={styles.friendAvatar} />
+									) : (
+										<View style={styles.friendAvatarPlaceholder}>
+											<Text style={styles.friendAvatarText}>
+												{item.displayName?.charAt(0).toUpperCase() || "?"}
+											</Text>
+										</View>
+									)}
+									<View style={styles.friendInfo}>
+										<Text style={styles.friendName}>
+											{item.displayName || item.email || "Unknown"}
+										</Text>
+										<Text style={styles.friendTrust}>Trust: {item.trustScore}</Text>
+									</View>
+									{(() => {
+										const badge = getFriendStatusBadge(item.friendStatus);
+										if (item.friendStatus === "friends") {
+											return (
+												<View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+													<Text style={[styles.statusText, { color: badge.color }]}>
+														{badge.text}
+													</Text>
+												</View>
+											);
+										}
+										if (item.friendStatus === "pending" || item.friendStatus === "outgoing") {
+											return (
+												<View style={[styles.statusBadge, { backgroundColor: badge.bg }]}>
+													<Text style={[styles.statusText, { color: badge.color }]}>
+														{badge.text}
+													</Text>
+												</View>
+											);
+										}
+										return (
+											<TouchableOpacity
+												style={styles.addButton}
+												onPress={() => handleSendFriendRequest(item.id)}
+											>
+												<Text style={styles.addButtonText}>Add</Text>
+											</TouchableOpacity>
+										);
+									})()}
+								</View>
+							)}
+							ListEmptyComponent={
+								searchQuery.length >= 2 && !searching ? (
+									<Text style={styles.noResultsText}>No users found</Text>
+								) : null
+							}
+						/>
+					</View>
+				</View>
+			</Modal>
 
 			<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
 				<Ionicons name="log-out-outline" size={20} color="#ef4444" />
@@ -739,4 +1077,161 @@ const styles = StyleSheet.create({
 		backgroundColor: "#1a0a0a",
 	},
 	logoutText: { color: "#ef4444", fontSize: 16, fontWeight: "600" },
+	addFriendButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 4,
+		backgroundColor: "#0c2d5a",
+		paddingHorizontal: 10,
+		paddingVertical: 4,
+		borderRadius: 12,
+	},
+	addFriendText: { color: "#3396ff", fontSize: 12, fontWeight: "600" },
+	friendsSection: {
+		marginBottom: 12,
+	},
+	friendsSectionTitle: {
+		color: "#64748b",
+		fontSize: 12,
+		fontWeight: "600",
+		textTransform: "uppercase",
+		letterSpacing: 0.5,
+		marginLeft: 16,
+		marginBottom: 8,
+	},
+	friendCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#0f172a",
+		marginHorizontal: 16,
+		marginBottom: 8,
+		padding: 12,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: "#1e293b",
+	},
+	friendAvatar: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+	},
+	friendAvatarPlaceholder: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		backgroundColor: "#334155",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	friendAvatarText: {
+		color: "#fff",
+		fontSize: 16,
+		fontWeight: "600",
+	},
+	friendInfo: {
+		flex: 1,
+		marginLeft: 12,
+	},
+	friendName: {
+		color: "#e2e8f0",
+		fontSize: 14,
+		fontWeight: "600",
+	},
+	friendTrust: {
+		color: "#64748b",
+		fontSize: 12,
+		marginTop: 2,
+	},
+	friendActions: {
+		flexDirection: "row",
+		gap: 8,
+	},
+	acceptButton: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: "#10b981",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	rejectButton: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: "#ef4444",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	removeButton: {
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		backgroundColor: "#7f1d1d",
+		borderRadius: 6,
+	},
+	removeButtonText: {
+		color: "#fff",
+		fontSize: 12,
+		fontWeight: "600",
+	},
+	addButton: {
+		paddingHorizontal: 14,
+		paddingVertical: 6,
+		backgroundColor: "#3396ff",
+		borderRadius: 6,
+	},
+	addButtonText: {
+		color: "#fff",
+		fontSize: 12,
+		fontWeight: "600",
+	},
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.7)",
+		justifyContent: "flex-end",
+	},
+	modalContent: {
+		backgroundColor: "#0f172a",
+		borderTopLeftRadius: 20,
+		borderTopRightRadius: 20,
+		paddingBottom: 40,
+		maxHeight: "80%",
+	},
+	modalHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		padding: 16,
+		borderBottomWidth: 1,
+		borderBottomColor: "#1e293b",
+	},
+	modalTitle: {
+		color: "#fff",
+		fontSize: 18,
+		fontWeight: "700",
+	},
+	searchInput: {
+		margin: 16,
+		padding: 12,
+		backgroundColor: "#1e293b",
+		borderRadius: 8,
+		color: "#fff",
+		fontSize: 14,
+	},
+	searchLoading: {
+		padding: 16,
+		alignItems: "center",
+	},
+	searchResultItem: {
+		flexDirection: "row",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: "#1e293b",
+	},
+	noResultsText: {
+		color: "#64748b",
+		textAlign: "center",
+		padding: 20,
+	},
 });
