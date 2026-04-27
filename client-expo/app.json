@@ -9,7 +9,11 @@
 		"experiments": {
 			"tsconfigPaths": true
 		},
-		"plugins": ["expo-font", "@react-native-community/datetimepicker"],
+		"plugins": [
+			"expo-font",
+			"@react-native-community/datetimepicker",
+			["expo-build-properties", { "android": { "usesCleartextTraffic": true } }]
+		],
 		"orientation": "portrait",
 		"icon": "./assets/logo.png",
 		"userInterfaceStyle": "light",

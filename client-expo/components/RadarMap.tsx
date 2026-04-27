@@ -151,7 +151,49 @@ export default function RadarMap({ friendsOnly = false }: RadarMapProps) {
 					);
 				})}
 			</MapView>
+			{/*<MapView
+				ref={mapRef}
+				style={styles.map}
+				initialRegion={FALLBACK_REGION}
+				showsUserLocation={true}
+				showsMyLocationButton={true}
+				scrollEnabled={true}
+				zoomEnabled={true}
+				pitchEnabled={true}
+				rotateEnabled={true}
+				onRegionChangeComplete={fetchActivitiesInBounds}
+				mapType="none"
+			>
+				<UrlTile
+					urlTemplate="https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+					maximumZ={19}
+					flipY={false}
+					zIndex={0}
+				/>
 
+				{activities.map((activity) => {
+					const lat = parseFloat(activity.location.coordinates[1] as any);
+					const lng = parseFloat(activity.location.coordinates[0] as any);
+
+					if (isNaN(lat) || isNaN(lng)) {
+						console.warn(
+							`Activity ${activity.id} has invalid coordinates. Skipping.`,
+						);
+						return null;
+					}
+
+					return (
+						<Marker
+							key={activity.id}
+							coordinate={{ latitude: lat, longitude: lng }}
+							pinColor="red"
+							title={activity.title}
+							description={activity.description}
+							zIndex={1}
+						/>
+					);
+				})}
+			</MapView>*/}
 			<View style={styles.attributionContainer} pointerEvents="none">
 				<View style={styles.attributionBackground}>
 					<Text style={styles.attributionText}>© OpenStreetMap, © CARTO</Text>
