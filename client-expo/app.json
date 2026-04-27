@@ -1,39 +1,45 @@
 {
-  "expo": {
-    "name": "my-expo-app",
-    "slug": "my-expo-app",
-    "version": "1.0.0",
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "experiments": {
-      "tsconfigPaths": true
-    },
-    "plugins": [
-      "expo-font",
-      "@react-native-community/datetimepicker"
-    ],
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.myexpoapp"
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.anonymous.myexpoapp"
-    }
-  }
+	"expo": {
+		"name": "Trybe",
+		"slug": "trybe-app",
+		"version": "1.0.0",
+		"web": {
+			"favicon": "./assets/logo.png"
+		},
+		"experiments": {
+			"tsconfigPaths": true
+		},
+		"plugins": ["expo-font", "@react-native-community/datetimepicker"],
+		"orientation": "portrait",
+		"icon": "./assets/logo.png",
+		"userInterfaceStyle": "light",
+		"splash": {
+			"image": "./assets/splash.png",
+			"resizeMode": "contain",
+			"backgroundColor": "#ffffff"
+		},
+		"assetBundlePatterns": ["**/*"],
+		"ios": {
+			"supportsTablet": true,
+			"bundleIdentifier": "com.abdx.trybe"
+		},
+		"android": {
+			"adaptiveIcon": {
+				"foregroundImage": "./assets/logo.png",
+				"backgroundColor": "#ffffff"
+			},
+			"package": "com.abdx.trybe",
+			"googleServicesFile": "./google-services.json",
+			"config": {
+				"googleMaps": {
+					"apiKey": "AIzaSyDummyKeyBypassForOSM1234567890"
+				}
+			}
+		},
+		"extra": {
+			"eas": {
+				"projectId": "a4421ae6-f68f-42ad-a1e8-5dfe48b7067f"
+			}
+		}
+	}
 }

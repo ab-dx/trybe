@@ -63,49 +63,52 @@ export default function RadarMap({ friendsOnly = false }: RadarMapProps) {
 		})();
 	}, []);
 
-	const fetchActivitiesInBounds = useCallback(async (region: Region) => {
-		if (region.latitudeDelta > ZOOM_THRESHOLD) {
-			setIsZoomedOut(true);
-			setActivities([]);
-			return;
-		}
-
-		setIsZoomedOut(false);
-		setIsFetching(true);
-
-		const minLat = region.latitude - region.latitudeDelta / 2;
-		const maxLat = region.latitude + region.latitudeDelta / 2;
-		const minLng = region.longitude - region.longitudeDelta / 2;
-		const maxLng = region.longitude + region.longitudeDelta / 2;
-
-		try {
-			const user = auth.currentUser;
-			const headers: Record<string, string> = {
-				"Content-Type": "application/json",
-			};
-
-			if (user) {
-				const token = await user.getIdToken();
-				headers["Authorization"] = `Bearer ${token}`;
+	const fetchActivitiesInBounds = useCallback(
+		async (region: Region) => {
+			if (region.latitudeDelta > ZOOM_THRESHOLD) {
+				setIsZoomedOut(true);
+				setActivities([]);
+				return;
 			}
 
-			let url = `${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`;
-			if (friendsOnly) {
-				url += "&friendsOnly=true";
+			setIsZoomedOut(false);
+			setIsFetching(true);
+
+			const minLat = region.latitude - region.latitudeDelta / 2;
+			const maxLat = region.latitude + region.latitudeDelta / 2;
+			const minLng = region.longitude - region.longitudeDelta / 2;
+			const maxLng = region.longitude + region.longitudeDelta / 2;
+
+			try {
+				const user = auth.currentUser;
+				const headers: Record<string, string> = {
+					"Content-Type": "application/json",
+				};
+
+				if (user) {
+					const token = await user.getIdToken();
+					headers["Authorization"] = `Bearer ${token}`;
+				}
+
+				let url = `${API_URL}/activities?minLat=${minLat}&maxLat=${maxLat}&minLng=${minLng}&maxLng=${maxLng}`;
+				if (friendsOnly) {
+					url += "&friendsOnly=true";
+				}
+
+				const response = await fetch(url, { headers });
+
+				if (!response.ok) throw new Error("Failed to fetch activities");
+
+				const data = await response.json();
+				setActivities(data);
+			} catch (error) {
+				console.error("Radar Error:", error);
+			} finally {
+				setIsFetching(false);
 			}
-
-			const response = await fetch(url, { headers });
-
-			if (!response.ok) throw new Error("Failed to fetch activities");
-
-			const data = await response.json();
-			setActivities(data);
-		} catch (error) {
-			console.error("Radar Error:", error);
-		} finally {
-			setIsFetching(false);
-		}
-	}, [friendsOnly]);
+		},
+		[friendsOnly],
+	);
 
 	return (
 		<View style={styles.container}>
@@ -137,8 +140,6 @@ export default function RadarMap({ friendsOnly = false }: RadarMapProps) {
 						);
 						return null;
 					}
-					// console.log(lat, " ");
-					// console.log(lng, "bitchass");
 					return (
 						<Marker
 							key={activity.id}
