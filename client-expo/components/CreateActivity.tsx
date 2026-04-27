@@ -24,6 +24,7 @@ export default function CreateActivity() {
 	const [description, setDescription] = useState("");
 	const [startTime, setStartTime] = useState(new Date());
 	const [showDatePicker, setShowDatePicker] = useState(false);
+	const [showTimePicker, setShowTimePicker] = useState(false);
 	const [visibility, setVisibility] = useState("PUBLIC");
 
 	const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
@@ -49,7 +50,24 @@ export default function CreateActivity() {
 
 	const onDateChange = (event: any, selectedDate?: Date) => {
 		setShowDatePicker(false);
-		if (selectedDate) setStartTime(selectedDate);
+		if (selectedDate) {
+			const newDate = new Date(startTime);
+			newDate.setFullYear(selectedDate.getFullYear());
+			newDate.setMonth(selectedDate.getMonth());
+			newDate.setDate(selectedDate.getDate());
+			setStartTime(newDate);
+			setShowTimePicker(true);
+		}
+	};
+
+	const onTimeChange = (event: any, selectedTime?: Date) => {
+		setShowTimePicker(false);
+		if (selectedTime) {
+			const newDate = new Date(startTime);
+			newDate.setHours(selectedTime.getHours());
+			newDate.setMinutes(selectedTime.getMinutes());
+			setStartTime(newDate);
+		}
 	};
 
 	const handleCreate = async () => {
@@ -161,9 +179,17 @@ export default function CreateActivity() {
 				{showDatePicker && (
 					<DateTimePicker
 						value={startTime}
-						mode="datetime"
-						display="default"
+						mode="date"
+						display="spinner"
 						onChange={onDateChange}
+					/>
+				)}
+				{showTimePicker && (
+					<DateTimePicker
+						value={startTime}
+						mode="time"
+						display="spinner"
+						onChange={onTimeChange}
 					/>
 				)}
 			</View>
